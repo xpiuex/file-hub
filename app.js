@@ -1,14 +1,19 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
+/* ===== ตั้งค่า (แก้ 2 บรรทัดนี้) ===== */
 const SUPABASE_URL = "https://qxatfxjaemqumxhgqlgu.supabase.co";   // ใส่ Project URL ของคุณ
 const SUPABASE_KEY = "sb_publishable_kFK1TySyqbOldG1X2FcijA_aFi9Udpk";        // ใส่ publishable key ของคุณ
+/* ==================================== */
+
 const BUCKET = "project-files";
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const DEFAULT_PROJECT_NAME = "ไฟล์ทั่วไป";
-const DB_LIMIT = 500 * 1024 * 1024;        // โควต้าฐานข้อมูลแผนฟรี
-const STORAGE_LIMIT = 1024 * 1024 * 1024;  // โควต้า Storage แผนฟรี
+const DB_LIMIT = 500 * 1024 * 1024;
+const STORAGE_LIMIT = 1024 * 1024 * 1024;
+const SIGNED_URL_SECONDS = 60;
 
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 let projects = [];
 let files = [];
 let shown = [];
@@ -16,7 +21,9 @@ let selected = new Set();
 let page = 1;
 let perPage = 10;
 let searchQ = "";
+let appStarted = false;
 
+/* ---------- Utilities ---------- */
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -56,13 +63,58 @@ function closeMenus() {
   document.querySelectorAll(".action-menu").forEach((m) => m.classList.add("hidden"));
 }
 
+/* ---------- ระบบล็อกอิน ---------- */
+const loginScreen = document.getElementById("loginScreen");
+
+function showLogin(msg = "") {
+  loginScreen.classList.remove("hidden");
+  loginScreen.classList.add("flex");
+  document.getElementById("loginMsg").textContent = msg;
+}
+
+function hideLogin() {
+  loginScreen.classList.add("hidden");
+  loginScreen.classList.remove("flex");
+}
+
+async function enterApp() {
+  const { data: allowed, error } = await sb.rpc("is_allowed");
+  if (error || !allowed) {
+    await sb.auth.signOut();
+    return showLogin("บัญชีนี้ไม่ได้รับอนุญาตให้ใช้งาน");
+  }
+  hideLogin();
+  if (!appStarted) {
+    appStarted = true;
+    loadAll();
+  }
+}
+
+sb.auth.onAuthStateChange((event, session) => {
+  if (session) enterApp();
+  else { appStarted = false; showLogin(); }
+});
+
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) showLogin("เข้าสู่ระบบไม่สำเร็จ: " + error.message);
+});
+
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  await sb.auth.signOut();
+  location.reload();
+});
+
 /* ---------- ขนาดพื้นที่ ---------- */
 async function loadUsage() {
   const { data, error } = await sb.rpc("get_storage_usage");
   if (error) {
     document.getElementById("dbText").textContent = "อ่านไม่สำเร็จ";
     document.getElementById("stText").textContent = "อ่านไม่สำเร็จ";
-    return showToast("อ่านขนาดพื้นที่ไม่สำเร็จ: " + error.message, "error");
+    return;
   }
   const pct = (v, l) => Math.min(100, (v / l) * 100);
   const db = Number(data.db_bytes || 0);
@@ -175,6 +227,7 @@ function updateSelectAll() {
   master.indeterminate = checked > 0 && checked < boxes.length;
 }
 
+/* ---------- การคลิกในตาราง ---------- */
 document.getElementById("tableBody").addEventListener("change", (e) => {
   if (!e.target.classList.contains("row-checkbox")) return;
   const id = e.target.dataset.id;
@@ -220,11 +273,14 @@ document.addEventListener("click", (e) => {
   if (!e.target.closest(".action-menu") && !e.target.closest('[data-act="menu"]')) closeMenus();
 });
 
-function downloadFile(id) {
+/* ---------- ดาวน์โหลด / ลบ (ผ่าน signed URL) ---------- */
+async function downloadFile(id) {
   const f = files.find((x) => x.id === id);
   if (!f) return;
-  const { data } = sb.storage.from(BUCKET).getPublicUrl(f.storage_path, { download: f.file_name });
-  window.open(data.publicUrl, "_blank");
+  const { data, error } = await sb.storage.from(BUCKET)
+    .createSignedUrl(f.storage_path, SIGNED_URL_SECONDS, { download: f.file_name });
+  if (error) return showToast(error.message, "error");
+  window.open(data.signedUrl, "_blank");
 }
 
 async function deleteFile(id, path) {
@@ -284,14 +340,13 @@ document.getElementById("fileInputHidden").addEventListener("change", async (e) 
   });
   if (upErr) return showToast(upErr.message, "error");
 
-  const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(storagePath);
   const { error } = await sb.from("files").insert({
     project_id: projectId,
     file_name: file.name,
     file_type: file.type || null,
     file_size: file.size,
     storage_path: storagePath,
-    url: pub.publicUrl,
+    url: "",
   });
   if (error) {
     await sb.storage.from(BUCKET).remove([storagePath]);
@@ -334,5 +389,3 @@ window.addEventListener("keydown", (e) => {
     if (s) s.focus();
   }
 });
-
-loadAll();
