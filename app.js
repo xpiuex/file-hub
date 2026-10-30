@@ -14,8 +14,8 @@ const DOWNLOAD_LINK_SECONDS = 60;
 const SHARE_LINK_SECONDS = 3600;
 const RECENT_DAYS = 7;
 
-const TYPE_LABELS = { PDF: "PDF", IMAGE: "Image", DOCUMENT: "Document", ARCHIVE: "Archive", DESIGN: "Design", VIDEO: "Video", OTHER: "Other" };
-const NAV_VIEWS = { Files: "files", Shared: "shared", Recent: "recent", Trash: "trash" };
+const TYPE_KEYS = ["PDF", "IMAGE", "DOCUMENT", "ARCHIVE", "DESIGN", "VIDEO", "OTHER"];
+const NAV_VIEWS = ["files", "shared", "recent", "trash"];
 const NAV_ACTIVE = "text-on-surface font-label-md text-label-md border-b-2 border-primary-container pb-1 transition-colors";
 const NAV_INACTIVE = "text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface";
 const COL_KEYS = { 2: "category", 3: "size", 4: "date" };
@@ -51,7 +51,7 @@ const fmtSize = (b) => {
   const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), 4);
   return (b / Math.pow(1024, i)).toFixed(i ? 1 : 0) + " " + u[i];
 };
-const fmtDate = (d) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const fmtDate = (d) => new Date(d).toLocaleDateString(window.getLang() === "th" ? "th-TH" : "en-US", { month: "short", day: "numeric", year: "numeric" });
 
 function fileType(name) {
   const ext = (name.split(".").pop() || "").toLowerCase();
@@ -66,14 +66,14 @@ function fileType(name) {
 
 const fileInfo = (name) => {
   const ext = (name.split(".").pop() || "").toLowerCase();
-  if (ext === "pdf") return { label: "PDF Document", icon: "picture_as_pdf", cls: "bg-error-container/20 border-error-container/40 text-error" };
-  if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext)) return { label: "Raster Image", icon: "image", cls: "bg-primary-container/20 border-primary-container/30 text-primary" };
-  if (ext === "svg") return { label: "SVG Vector Graphic", icon: "brush", cls: "bg-secondary-container/30 border-secondary-container/50 text-secondary" };
-  if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return { label: "Compressed Archive", icon: "folder_zip", cls: "bg-tertiary-container/30 border-tertiary-container/40 text-tertiary" };
-  if (["doc", "docx", "txt", "md"].includes(ext)) return { label: "Document", icon: "description", cls: "bg-surface-container-high border-outline-variant text-outline" };
-  if (["fig", "sketch", "xd"].includes(ext)) return { label: "Design File", icon: "dashboard_customize", cls: "bg-primary-container/20 border-primary-container/30 text-primary" };
-  if (["mp4", "mov", "webm"].includes(ext)) return { label: "Video", icon: "movie", cls: "bg-primary-container/15 border-primary-container/25 text-primary-fixed" };
-  return { label: ext ? ext.toUpperCase() + " File" : "File", icon: "description", cls: "bg-surface-container-high border-outline-variant text-outline" };
+  if (ext === "pdf") return { label: t("info_pdf"), icon: "picture_as_pdf", cls: "bg-error-container/20 border-error-container/40 text-error" };
+  if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext)) return { label: t("info_image"), icon: "image", cls: "bg-primary-container/20 border-primary-container/30 text-primary" };
+  if (ext === "svg") return { label: t("info_svg"), icon: "brush", cls: "bg-secondary-container/30 border-secondary-container/50 text-secondary" };
+  if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return { label: t("info_archive"), icon: "folder_zip", cls: "bg-tertiary-container/30 border-tertiary-container/40 text-tertiary" };
+  if (["doc", "docx", "txt", "md"].includes(ext)) return { label: t("info_doc"), icon: "description", cls: "bg-surface-container-high border-outline-variant text-outline" };
+  if (["fig", "sketch", "xd"].includes(ext)) return { label: t("info_design"), icon: "dashboard_customize", cls: "bg-primary-container/20 border-primary-container/30 text-primary" };
+  if (["mp4", "mov", "webm"].includes(ext)) return { label: t("info_video"), icon: "movie", cls: "bg-primary-container/15 border-primary-container/25 text-primary-fixed" };
+  return { label: ext ? t("info_ext", { ext: ext.toUpperCase() }) : t("info_file"), icon: "description", cls: "bg-surface-container-high border-outline-variant text-outline" };
 };
 
 const projectName = (id) => projects.find((p) => p.id === id)?.name ?? "-";
@@ -134,18 +134,18 @@ const divider = `<div class="h-px bg-outline-variant my-1"></div>`;
 
 function rowMenuHtml(f) {
   if (view === "trash") {
-    return item("restore", "restore_from_trash", "Restore", f.id) +
-           item("purge", "delete_forever", "Delete permanently", f.id, "text-error");
+    return item("restore", "restore_from_trash", t("menu_restore"), f.id) +
+           item("purge", "delete_forever", t("menu_purge"), f.id, "text-error");
   }
-  return item("download", "download", "Download", f.id) +
-         item("share", "link", "Share link", f.id) +
-         item("rename", "edit", "Rename", f.id) +
+  return item("download", "download", t("menu_download"), f.id) +
+         item("share", "link", t("menu_share"), f.id) +
+         item("rename", "edit", t("menu_rename"), f.id) +
          divider +
-         item("delete", "delete", "Move to trash", f.id, "text-error");
+         item("delete", "delete", t("menu_trash"), f.id, "text-error");
 }
 
 function typeMenuHtml() {
-  const opts = [["all", "All Types"], ...Object.entries(TYPE_LABELS).map(([v, l]) => [v, l])];
+  const opts = [["all", t("type_all")], ...TYPE_KEYS.map((v) => [v, t("type_" + v)])];
   return opts.map(([v, l]) => `
     <button type="button" data-act="type" data-val="${v}" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded text-label-sm font-label-sm hover:bg-surface-container transition-colors ${typeFilter === v ? "text-primary" : ""}">
       <span>${l}</span>${typeFilter === v ? '<span class="material-symbols-outlined !text-[15px]">check</span>' : ""}
@@ -157,17 +157,17 @@ function colsMenuHtml() {
     <button type="button" data-act="col" data-val="${key}" class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-label-sm font-label-sm hover:bg-surface-container transition-colors">
       <span class="material-symbols-outlined !text-[15px]">${cols[key] ? "check_box" : "check_box_outline_blank"}</span><span>${label}</span>
     </button>`;
-  return `<div class="px-2.5 py-1 text-[11px] text-outline">คอลัมน์ที่แสดง</div>` +
-    row("category", "Category") + row("size", "File Size") + row("date", "Uploaded Date");
+  return `<div class="px-2.5 py-1 text-[11px] text-outline">${t("cols_show")}</div>` +
+    row("category", t("col_category")) + row("size", t("col_size")) + row("date", t("col_date"));
 }
 
 function notifyHtml() {
   const list = activity.slice(0, 15).map((a) => `
     <div class="px-2.5 py-2 border-b border-outline-variant last:border-0">
       <div class="text-body-sm text-on-surface">${esc(a.msg)}</div>
-      <div class="text-[11px] text-outline">${a.time.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}</div>
+      <div class="text-[11px] text-outline">${a.time.toLocaleTimeString(window.getLang() === "th" ? "th-TH" : "en-US", { hour: "2-digit", minute: "2-digit" })}</div>
     </div>`).join("");
-  return list || `<div class="px-2.5 py-3 text-body-sm text-outline">ยังไม่มีการแจ้งเตือนในเซสชันนี้</div>`;
+  return list || `<div class="px-2.5 py-3 text-body-sm text-outline">${t("no_notify")}</div>`;
 }
 
 function syncGroupPills() {
@@ -182,7 +182,7 @@ function syncGroupPills() {
 
 function syncTypeLabel() {
   if (!typeBtn) return;
-  typeBtn.querySelectorAll("span")[1].textContent = typeFilter === "all" ? "All Types" : TYPE_LABELS[typeFilter];
+  typeBtn.querySelectorAll("span")[1].textContent = typeFilter === "all" ? t("type_all") : t("type_" + typeFilter);
 }
 
 /* ---------- สิทธิ์และการล็อกอิน ---------- */
@@ -202,7 +202,7 @@ function hideLogin() {
 
 async function refreshPermission() {
   const { data: { session } } = await sb.auth.getSession();
-  logoutBtn.textContent = session ? "ออกจากระบบ" : "เข้าสู่ระบบ";
+  logoutBtn.textContent = session ? t("logout") : t("login");
   if (!session) {
     canDelete = false;
     return;
@@ -220,7 +220,7 @@ async function requireAdmin(action) {
   await refreshPermission();
   if (canDelete) return action();
   pendingAction = action;
-  showLogin("เข้าสู่ระบบด้วยอีเมลที่ได้รับสิทธิ์เพื่อดำเนินการนี้");
+  showLogin(t("login_need_perm"));
 }
 
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
@@ -229,18 +229,18 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   const password = document.getElementById("loginPassword").value;
 
   const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) return showLogin("เข้าสู่ระบบไม่สำเร็จ: " + error.message);
+  if (error) return showLogin(t("login_failed") + ": " + error.message);
 
   await refreshPermission();
   if (!canDelete) {
     await sb.auth.signOut();
     pendingAction = null;
-    return showLogin("อีเมลนี้ไม่มีสิทธิ์ดำเนินการนี้");
+    return showLogin(t("login_not_allowed"));
   }
 
   hideLogin();
   document.getElementById("loginPassword").value = "";
-  showToast("เข้าสู่ระบบแล้ว");
+  showToast(t("logged_in"));
 
   const action = pendingAction;
   pendingAction = null;
@@ -256,7 +256,7 @@ logoutBtn.addEventListener("click", async () => {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     await sb.auth.signOut();
-    showToast("ออกจากระบบแล้ว");
+    showToast(t("logged_out"));
   } else {
     showLogin("");
   }
@@ -266,8 +266,8 @@ logoutBtn.addEventListener("click", async () => {
 async function loadUsage() {
   const { data, error } = await sb.rpc("get_storage_usage");
   if (error) {
-    document.getElementById("dbText").textContent = "อ่านไม่สำเร็จ";
-    document.getElementById("stText").textContent = "อ่านไม่สำเร็จ";
+    document.getElementById("dbText").textContent = t("read_failed");
+    document.getElementById("stText").textContent = t("read_failed");
     return;
   }
   const pct = (v, l) => Math.min(100, (v / l) * 100);
@@ -276,11 +276,11 @@ async function loadUsage() {
 
   document.getElementById("dbText").textContent = `${fmtSize(db)} / ${fmtSize(DB_LIMIT)}`;
   document.getElementById("dbBar").style.width = pct(db, DB_LIMIT) + "%";
-  document.getElementById("dbPct").textContent = `ใช้แล้ว ${pct(db, DB_LIMIT).toFixed(1)}% ของโควต้า`;
+  document.getElementById("dbPct").textContent = t("used_pct", { v: pct(db, DB_LIMIT).toFixed(1) });
 
   document.getElementById("stText").textContent = `${fmtSize(st)} / ${fmtSize(STORAGE_LIMIT)}`;
   document.getElementById("stBar").style.width = pct(st, STORAGE_LIMIT) + "%";
-  document.getElementById("stPct").textContent = `ใช้แล้ว ${pct(st, STORAGE_LIMIT).toFixed(1)}% ของโควต้า`;
+  document.getElementById("stPct").textContent = t("used_pct", { v: pct(st, STORAGE_LIMIT).toFixed(1) });
 }
 document.getElementById("usageRefreshBtn").addEventListener("click", loadUsage);
 
@@ -293,7 +293,7 @@ async function loadAll() {
   ]);
   const err = p.error || f.error;
   if (err) return showToast(err.message, "error");
-  if (s.error) console.warn("อ่านรายการแชร์ไม่สำเร็จ (ยังไม่ได้รัน SQL?):", s.error.message);
+  if (s.error) console.warn("Share list failed (SQL not run?):", s.error.message);
 
   projects = p.data;
   files = f.data;
@@ -326,10 +326,10 @@ function computeShown() {
 
 function emptyMessage() {
   return {
-    files: "ไม่พบไฟล์ที่ตรงกับตัวกรอง",
-    shared: "ยังไม่มีไฟล์ที่แชร์ (ลิงก์ที่ยังไม่หมดอายุ)",
-    recent: `ไม่มีไฟล์ที่อัปโหลดใน ${RECENT_DAYS} วันที่ผ่านมา`,
-    trash: "ถังขยะว่างเปล่า",
+    files: t("empty_search"),
+    shared: t("empty_shared"),
+    recent: t("empty_recent", { n: RECENT_DAYS }),
+    trash: t("empty_trash"),
   }[view];
 }
 
@@ -358,7 +358,7 @@ function rowHtml(f) {
     <td class="px-4 py-3 font-code-inline text-code-inline text-on-surface-variant tabular-nums">${fmtSize(f.file_size)}</td>
     <td class="px-4 py-3 text-on-surface-variant font-body-sm text-body-sm">${fmtDate(f.uploaded_at)}</td>
     <td class="px-4 py-3 text-right">
-      <button type="button" class="p-1 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-act="menu" data-id="${id}" title="More options">
+      <button type="button" class="p-1 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-act="menu" data-id="${id}" title="${t('more_options')}">
         <span class="material-symbols-outlined !text-[18px] pointer-events-none">more_horiz</span>
       </button>
     </td>
@@ -391,7 +391,7 @@ function render() {
     ? slice.map(rowHtml).join("")
     : `<tr><td colspan="6" class="px-4 py-10 text-center text-outline font-body-sm">${emptyMessage()}</td></tr>`;
 
-  document.getElementById("pageInfo").textContent = `Page ${page} of ${pages}`;
+  document.getElementById("pageInfo").textContent = t("page_of", { p: page, n: pages });
   document.getElementById("firstPage").disabled = page <= 1;
   document.getElementById("prevPage").disabled = page <= 1;
   document.getElementById("nextPage").disabled = page >= pages;
@@ -417,7 +417,7 @@ function setView(v) {
   page = 1;
   selected.clear();
   document.querySelectorAll("header nav a").forEach((a) => {
-    a.className = NAV_VIEWS[a.textContent.trim()] === v ? NAV_ACTIVE : NAV_INACTIVE;
+    a.className = a.dataset.view === v ? NAV_ACTIVE : NAV_INACTIVE;
   });
   render();
 }
@@ -521,8 +521,8 @@ function addTransfer(name) {
       <div class="bg-primary-container h-full rounded-full transition-all duration-150" data-bar style="width: 0%"></div>
     </div>
     <div class="flex items-center justify-between font-body-sm text-body-sm text-outline gap-2">
-      <span data-size>เริ่มดาวน์โหลด...</span>
-      <span data-status>กำลังดำเนินการ</span>
+      <span data-size>${t("start_dl")}</span>
+      <span data-status>${t("in_progress")}</span>
     </div>`;
   el.querySelector("[data-name]").textContent = name;
   ensureTransferPanel().appendChild(el);
@@ -550,12 +550,12 @@ function finishTransfer(t, ok, msg = "") {
   if (ok) {
     bar.style.width = "100%";
     t.el.querySelector("[data-pct]").textContent = "100%";
-    t.el.querySelector("[data-status]").textContent = "เสร็จแล้ว";
+    t.el.querySelector("[data-status]").textContent = t("done");
     setTimeout(() => t.el.remove(), 4000);
   } else {
     bar.classList.replace("bg-primary-container", "bg-error");
     const st = t.el.querySelector("[data-status]");
-    st.textContent = "ไม่สำเร็จ" + (msg ? ": " + msg : "");
+    st.textContent = t("failed") + (msg ? ": " + msg : "");
     st.classList.add("text-error");
     setTimeout(() => t.el.remove(), 8000);
   }
@@ -606,7 +606,7 @@ async function downloadFile(f) {
     const blob = await readWithProgress(res, t, Number(f.file_size) || 0);
     saveBlob(blob, f.file_name);
     finishTransfer(t, true);
-    logActivity(`ดาวน์โหลด "${f.file_name}"`);
+    logActivity(t("act_download", { name: f.file_name }));
   } catch (err) {
     // ถ้าอ่านแบบมีความคืบหน้าไม่ได้ (เช่น CORS) ให้เปิดลิงก์ตรงแทน
     finishTransfer(t, false, err.message);
@@ -616,12 +616,12 @@ async function downloadFile(f) {
 
 /* ---------- นำเข้าจาก URL ---------- */
 async function importFromUrl() {
-  const input = prompt("วาง URL ของไฟล์ (ต้องเป็น https:// และเข้าถึงจากเบราว์เซอร์ได้)");
+  const input = prompt(t("url_prompt"));
   if (!input) return;
 
   let u;
-  try { u = new URL(input.trim()); } catch { return showToast("URL ไม่ถูกต้อง", "error"); }
-  if (u.protocol !== "https:") return showToast("รองรับเฉพาะ https://", "error");
+  try { u = new URL(input.trim()); } catch { return showToast(t("url_invalid"), "error"); }
+  if (u.protocol !== "https:") return showToast(t("https_only"), "error");
 
   let name = "imported-file";
   try { name = decodeURIComponent(u.pathname.split("/").pop() || "") || name; } catch {}
@@ -646,21 +646,21 @@ async function shareFile(f) {
 
   const expires = new Date(Date.now() + SHARE_LINK_SECONDS * 1000).toISOString();
   const { error: shErr } = await sb.from("share_links").insert({ file_id: f.id, expires_at: expires });
-  if (shErr) console.warn("บันทึกรายการแชร์ไม่สำเร็จ:", shErr.message);
+  if (shErr) console.warn("Saving share record failed:", shErr.message);
 
   try {
     await navigator.clipboard.writeText(data.signedUrl);
-    showToast("คัดลอกลิงก์แล้ว (ใช้ได้ 1 ชั่วโมง)", "link");
+    showToast(t("link_copied"), "link");
   } catch {
-    prompt("คัดลอกลิงก์นี้ (ใช้ได้ 1 ชั่วโมง)", data.signedUrl);
+    prompt(t("copy_link_prompt"), data.signedUrl);
   }
-  logActivity(`แชร์ "${f.file_name}"`);
+  logActivity(t("act_share", { name: f.file_name }));
   loadAll();
 }
 
 /* ---------- เปลี่ยนชื่อ (ต้องมีสิทธิ์) ---------- */
 async function renameFile(f) {
-  const newName = prompt("ชื่อไฟล์ใหม่", f.file_name);
+  const newName = prompt(t("new_name_prompt"), f.file_name);
   if (!newName || !newName.trim() || newName.trim() === f.file_name) return;
 
   const { data, error } = await sb.from("files")
@@ -668,25 +668,25 @@ async function renameFile(f) {
     .eq("id", f.id)
     .select("id");
   if (error) return showToast(error.message, "error");
-  if (!data || data.length === 0) return showToast("ไม่มีสิทธิ์เปลี่ยนชื่อไฟล์นี้", "error");
+  if (!data || data.length === 0) return showToast(t("no_perm_rename"), "error");
 
-  logActivity(`เปลี่ยนชื่อเป็น "${newName.trim()}"`);
-  showToast("เปลี่ยนชื่อแล้ว");
+  logActivity(t("act_rename", { name: newName.trim() }));
+  showToast(t("renamed"));
   loadAll();
 }
 
 /* ---------- ย้ายไปถังขยะ / กู้คืน / ลบถาวร (ต้องมีสิทธิ์) ---------- */
 async function trashFile(f) {
-  if (!confirm("ย้ายไฟล์นี้ไปถังขยะ?")) return;
+  if (!confirm(t("confirm_trash"))) return;
   const { data, error } = await sb.from("files")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", f.id)
     .select("id");
   if (error) return showToast(error.message, "error");
-  if (!data || data.length === 0) return showToast("ไม่มีสิทธิ์ย้ายไฟล์นี้", "error");
+  if (!data || data.length === 0) return showToast(t("no_perm_trash"), "error");
 
-  logActivity(`ย้าย "${f.file_name}" ไปถังขยะ`);
-  showToast("ย้ายไปถังขยะแล้ว");
+  logActivity(t("act_trash", { name: f.file_name }));
+  showToast(t("moved_trash"));
   loadAll();
 }
 
@@ -696,22 +696,22 @@ async function restoreFile(f) {
     .eq("id", f.id)
     .select("id");
   if (error) return showToast(error.message, "error");
-  if (!data || data.length === 0) return showToast("ไม่มีสิทธิ์กู้คืนไฟล์นี้", "error");
+  if (!data || data.length === 0) return showToast(t("no_perm_restore"), "error");
 
-  logActivity(`กู้คืน "${f.file_name}"`);
-  showToast("กู้คืนแล้ว");
+  logActivity(t("act_restore", { name: f.file_name }));
+  showToast(t("restored"));
   loadAll();
 }
 
 async function purgeFile(f) {
-  if (!confirm("ลบถาวร? กู้คืนไม่ได้")) return;
+  if (!confirm(t("confirm_purge"))) return;
   const { data, error } = await sb.from("files").delete().eq("id", f.id).select("id");
   if (error) return showToast(error.message, "error");
-  if (!data || data.length === 0) return showToast("ไม่มีสิทธิ์ลบไฟล์นี้", "error");
+  if (!data || data.length === 0) return showToast(t("no_perm_delete"), "error");
 
   await sb.storage.from(BUCKET).remove([f.storage_path]);
-  logActivity(`ลบถาวร "${f.file_name}"`);
-  showToast("ลบถาวรแล้ว");
+  logActivity(t("act_purge", { name: f.file_name }));
+  showToast(t("purged"));
   loadAll();
 }
 
@@ -737,20 +737,20 @@ async function getDefaultProjectId() {
 }
 
 async function uploadFileObject(file) {
-  if (file.size > MAX_FILE_SIZE) return showToast("ไฟล์ใหญ่เกิน 50 MB", "error");
+  if (file.size > MAX_FILE_SIZE) return showToast(t("file_too_big"), "error");
 
   let projectId;
   try {
     projectId = await getDefaultProjectId();
   } catch (err) {
-    return showToast("เตรียมโปรเจกต์ไม่สำเร็จ: " + err.message, "error");
+    return showToast(t("prep_failed", { msg: err.message }), "error");
   }
 
   const dot = file.name.lastIndexOf(".");
   const ext = dot > 0 ? file.name.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, "") : "";
   const storagePath = `${projectId}/${crypto.randomUUID()}${ext ? "." + ext : ""}`;
 
-  showToast("กำลังอัปโหลด...", "cloud_upload");
+  showToast(t("uploading"), "cloud_upload");
   const { error: upErr } = await sb.storage.from(BUCKET).upload(storagePath, file, {
     contentType: file.type || "application/octet-stream",
   });
@@ -768,8 +768,8 @@ async function uploadFileObject(file) {
     await sb.storage.from(BUCKET).remove([storagePath]);
     return showToast(error.message, "error");
   }
-  logActivity(`อัปโหลด "${file.name}"`);
-  showToast("อัปโหลดสำเร็จ");
+  logActivity(t("act_upload", { name: file.name }));
+  showToast(t("upload_ok"));
   loadAll();
 }
 
@@ -809,7 +809,7 @@ function applyTheme(name) {
   window.__setTheme(name);
   const btn = document.getElementById("themeToggleBtn");
   btn.querySelector(".material-symbols-outlined").textContent = name === "dark" ? "light_mode" : "dark_mode";
-  btn.title = name === "dark" ? "สลับเป็นธีมสว่าง" : "สลับเป็นธีมมืด";
+  btn.title = name === "dark" ? t("theme_to_light") : t("theme_to_dark");
 }
 
 document.getElementById("themeToggleBtn").addEventListener("click", () => {
@@ -825,19 +825,22 @@ window.addEventListener("keydown", (e) => {
 
 /* ---------- เริ่มต้น: ถอด onclick เดโมของปุ่มและผูกฟังก์ชันจริง ---------- */
 function init() {
-  const byText = (txt) => [...document.querySelectorAll("button")].filter((b) => b.textContent.includes(txt));
+  const byKey = (key) => {
+    const el = document.querySelector('[data-i18n="' + key + '"]');
+    return el ? el.closest("button") : null;
+  };
   const setAct = (el, act) => {
     if (!el) return;
     el.removeAttribute("onclick");
     el.dataset.act = act;
   };
 
-  typeBtn = byText("All Types")[0] || null;
+  typeBtn = byKey("type_all");
   setAct(typeBtn, "open-type");
-  setAct(byText("Columns")[0], "open-cols");
+  setAct(byKey("columns"), "open-cols");
   setAct(document.querySelector('button[title="View columns"]'), "open-cols");
   setAct(document.querySelector('button[title="Notifications"]'), "open-notify");
-  byText("Import from Cloud").forEach((b) => setAct(b, "import-url"));
+  setAct(byKey("import_cloud"), "import-url");
 
   // ทำให้เมนูด้านบนแสดงบนมือถือด้วย (เลื่อนแนวนอนได้)
   const nav = document.querySelector("header nav");
@@ -845,17 +848,37 @@ function init() {
   document.querySelectorAll("header nav a").forEach((a) => {
     a.addEventListener("click", (e) => {
       e.preventDefault();
-      const v = NAV_VIEWS[a.textContent.trim()];
+      const v = a.dataset.view;
       if (v) setView(v);
     });
   });
 
   syncTypeLabel();
   syncGroupPills();
+  updateLangLabel();
   setView("files");
   applyTheme(localStorage.getItem("theme") === "light" ? "light" : "dark");
   refreshPermission();
   loadAll();
 }
+
+function updateLangLabel() {
+  const el = document.getElementById("langLabel");
+  if (el) el.textContent = window.getLang() === "th" ? "EN" : "ไทย";
+}
+
+window.addEventListener("langchange", () => {
+  updateLangLabel();
+  applyTheme(localStorage.getItem("theme") === "light" ? "light" : "dark");
+  syncTypeLabel();
+  syncGroupPills();
+  refreshPermission();
+  render();
+  loadUsage();
+});
+
+document.getElementById("langToggleBtn").addEventListener("click", () => {
+  window.setLang(window.getLang() === "th" ? "en" : "th");
+});
 
 init();
