@@ -1,0 +1,32 @@
+    .material-symbols-outlined {
+      font-size: 18px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #434655; border-radius: 3px; }
+
+/* ---------- responsive: ปรับให้พอดีทุกขนาดหน้าจอ ---------- */
+html, body { max-width: 100%; }
+
+@media (max-width: 767px) {
+  /* ซ่อนคอลัมน์ Category, File Size, Uploaded Date บนจอแคบ (ปุ่ม Columns ยังใช้ได้บนจอใหญ่) */
+  #tableBody td:nth-child(3), #tableBody td:nth-child(4), #tableBody td:nth-child(5),
+  thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5) {
+    display: none !important;
+  }
+  /* แจ้งเตือนและแถบดาวน์โหลดเต็มความกว้างด้านล่าง */
+  #toast {
+    left: 0.75rem !important; right: 0.75rem !important; bottom: 0.75rem !important;
+    justify-content: center;
+  }
+  #transferPanel {
+    left: 0.75rem !important; right: 0.75rem !important; bottom: 4.5rem !important;
+    width: auto !important;
+  }
+  /* ตารางเลื่อนแนวนอนได้เมื่อจำเป็น แต่ไม่ดันทั้งหน้า */
+  .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+}
