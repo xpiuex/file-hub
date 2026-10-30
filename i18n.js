@@ -3,6 +3,8 @@
   var DICT = {
     th: {
       app_title: "DataGrid - ไฟล์และทรัพยากร",
+      dup_content: "ไฟล์เนื้อหาเดียวกันนี้มีอยู่แล้ว: {name}", dup_db: "ไฟล์นี้ซ้ำกับที่มีอยู่แล้ว",
+      renamed_auto: "ชื่อซ้ำ บันทึกเป็น \"{name}\"", name_taken: "ชื่อนี้มีอยู่แล้วในโปรเจกต์",
       login: "เข้าสู่ระบบ", logout: "ออกจากระบบ", login_email: "อีเมล", login_password: "รหัสผ่าน",
       login_cancel: "ยกเลิก", login_failed: "เข้าสู่ระบบไม่สำเร็จ", login_need_perm: "เข้าสู่ระบบด้วยอีเมลที่ได้รับสิทธิ์เพื่อดำเนินการนี้",
       login_not_allowed: "อีเมลนี้ไม่มีสิทธิ์ดำเนินการนี้", logged_in: "เข้าสู่ระบบแล้ว", logged_out: "ออกจากระบบแล้ว",
@@ -47,6 +49,8 @@
     },
     en: {
       app_title: "DataGrid - Files & Assets",
+      dup_content: "An identical file already exists: {name}", dup_db: "This file duplicates an existing one",
+      renamed_auto: "Name taken, saved as \"{name}\"", name_taken: "This name already exists in the project",
       login: "Sign in", logout: "Sign out", login_email: "Email", login_password: "Password",
       login_cancel: "Cancel", login_failed: "Sign-in failed", login_need_perm: "Sign in with an authorized email to continue",
       login_not_allowed: "This email is not authorized for this action", logged_in: "Signed in", logged_out: "Signed out",
