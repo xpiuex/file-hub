@@ -30,3 +30,23 @@ html, body { max-width: 100%; }
   /* ตารางเลื่อนแนวนอนได้เมื่อจำเป็น แต่ไม่ดันทั้งหน้า */
   .overflow-x-auto { -webkit-overflow-scrolling: touch; }
 }
+
+/* ---------- mobile table fit ---------- */
+@media (max-width: 767px) {
+  /* ให้คอลัมน์ชื่อไฟล์ยืดได้และตัดด้วย ... แทนการล้นออกนอกการ์ด */
+  #tableBody td:nth-child(2),
+  thead th:nth-child(2) {
+    max-width: 0;
+    width: 100%;
+  }
+  /* คอลัมน์การจัดการต้องไม่ถูกดันออกนอกจอ */
+  #tableBody td:last-child,
+  thead th:last-child {
+    white-space: nowrap;
+    width: 3rem;
+  }
+  /* แถบเลื่อนแนวนอนของตารางไม่จำเป็นอีกแล้ว */
+  #tableCard .overflow-x-auto {
+    overflow-x: hidden;
+  }
+}
