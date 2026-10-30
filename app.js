@@ -667,7 +667,7 @@ async function renameFile(f) {
     .update({ file_name: newName.trim() })
     .eq("id", f.id)
     .select("id");
-  if (error) return showToast(error.message, "error");
+  if (error) return showToast(error.code === "23505" ? t("name_taken") : error.message, "error");
   if (!data || data.length === 0) return showToast(t("no_perm_rename"), "error");
 
   logActivity(t("act_rename", { name: newName.trim() }));
@@ -695,7 +695,7 @@ async function restoreFile(f) {
     .update({ deleted_at: null })
     .eq("id", f.id)
     .select("id");
-  if (error) return showToast(error.message, "error");
+  if (error) return showToast(error.code === "23505" ? t("name_taken") : error.message, "error");
   if (!data || data.length === 0) return showToast(t("no_perm_restore"), "error");
 
   logActivity(t("act_restore", { name: f.file_name }));
@@ -736,6 +736,29 @@ async function getDefaultProjectId() {
   return created.id;
 }
 
+/* ---------- ป้องกันไฟล์ซ้ำ ---------- */
+// คำนวณ SHA-256 ของเนื้อหาไฟล์ (ต้องเปิดผ่าน https หรือ localhost)
+async function sha256Hex(file) {
+  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// ถ้าชื่อซ้ำในโปรเจกต์ (ไม่สนตัวพิมพ์เล็ก-ใหญ่) เติม (2), (3) ต่อท้ายชื่อ
+function uniqueName(name, projectId) {
+  const taken = new Set(
+    files.filter((f) => !f.deleted_at && f.project_id === projectId).map((f) => f.file_name.toLowerCase())
+  );
+  if (!taken.has(name.toLowerCase())) return name;
+  const dot = name.lastIndexOf(".");
+  const base = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot) : "";
+  for (let i = 2; i < 10000; i++) {
+    const candidate = `${base} (${i})${ext}`;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+  return name;
+}
+
 async function uploadFileObject(file) {
   if (file.size > MAX_FILE_SIZE) return showToast(t("file_too_big"), "error");
 
@@ -746,11 +769,28 @@ async function uploadFileObject(file) {
     return showToast(t("prep_failed", { msg: err.message }), "error");
   }
 
+  showToast(t("uploading"), "cloud_upload");
+
+  // 1) เนื้อหาซ้ำกับไฟล์ที่มีอยู่ (ที่ยังไม่อยู่ในถังขยะ) จะไม่อัปโหลด
+  let hash = null;
+  try {
+    hash = await sha256Hex(file);
+  } catch (err) {
+    console.warn("คำนวณ hash ไม่สำเร็จ (ต้องเปิดผ่าน https):", err.message);
+  }
+  if (hash) {
+    const { data: dup, error: dupErr } = await sb.from("files")
+      .select("file_name").eq("content_hash", hash).is("deleted_at", null).limit(1);
+    if (!dupErr && dup && dup.length) return showToast(t("dup_content", { name: dup[0].file_name }), "warning");
+  }
+
+  // 2) ชื่อซ้ำ -> บันทึกด้วยชื่อใหม่ที่ไม่ซ้ำ
+  const finalName = uniqueName(file.name, projectId);
+
   const dot = file.name.lastIndexOf(".");
   const ext = dot > 0 ? file.name.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, "") : "";
   const storagePath = `${projectId}/${crypto.randomUUID()}${ext ? "." + ext : ""}`;
 
-  showToast(t("uploading"), "cloud_upload");
   const { error: upErr } = await sb.storage.from(BUCKET).upload(storagePath, file, {
     contentType: file.type || "application/octet-stream",
   });
@@ -758,18 +798,20 @@ async function uploadFileObject(file) {
 
   const { error } = await sb.from("files").insert({
     project_id: projectId,
-    file_name: file.name,
+    file_name: finalName,
     file_type: file.type || null,
     file_size: file.size,
     storage_path: storagePath,
+    content_hash: hash,
     url: "",
   });
   if (error) {
     await sb.storage.from(BUCKET).remove([storagePath]);
-    return showToast(error.message, "error");
+    // 23505 = ละเมิด unique index ที่ฐานข้อมูล (กันกรณีอัปโหลดพร้อมกัน)
+    return showToast(error.code === "23505" ? t("dup_db") : error.message, "error");
   }
-  logActivity(t("act_upload", { name: file.name }));
-  showToast(t("upload_ok"));
+  logActivity(t("act_upload", { name: finalName }));
+  showToast(finalName !== file.name ? t("renamed_auto", { name: finalName }) : t("upload_ok"));
   loadAll();
 }
 
