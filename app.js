@@ -28,6 +28,8 @@ let shareRows = [];
 let shown = [];
 let view = "files";
 let typeFilter = "all";
+let groupFilter = "all";
+const GROUPS = { docs: ["DOCUMENT", "PDF"], images: ["IMAGE"], archives: ["ARCHIVE"] };
 let searchQ = "";
 let page = 1;
 let perPage = 10;
@@ -168,6 +170,16 @@ function notifyHtml() {
   return list || `<div class="px-2.5 py-3 text-body-sm text-outline">ยังไม่มีการแจ้งเตือนในเซสชันนี้</div>`;
 }
 
+function syncGroupPills() {
+  const base = "h-7 px-2.5 rounded-full text-label-sm font-label-sm transition-colors whitespace-nowrap border";
+  document.querySelectorAll('#groupPills button[data-act="group"]').forEach((b) => {
+    const on = b.dataset.val === groupFilter;
+    b.className = base + (on
+      ? " bg-primary-container/20 text-primary border-primary/30"
+      : " border-transparent text-on-surface-variant hover:bg-surface-container hover:text-on-surface");
+  });
+}
+
 function syncTypeLabel() {
   if (!typeBtn) return;
   typeBtn.querySelectorAll("span")[1].textContent = typeFilter === "all" ? "All Types" : TYPE_LABELS[typeFilter];
@@ -306,6 +318,7 @@ function computeShown() {
     if (view === "shared") list = list.filter((f) => sharedIds.has(f.id));
   }
   if (typeFilter !== "all") list = list.filter((f) => fileType(f.file_name) === typeFilter);
+  if (groupFilter !== "all") list = list.filter((f) => GROUPS[groupFilter].includes(fileType(f.file_name)));
   if (q) list = list.filter((f) =>
     f.file_name.toLowerCase().includes(q) || projectName(f.project_id).toLowerCase().includes(q));
   return list;
@@ -449,8 +462,18 @@ document.addEventListener("click", async (e) => {
       return openPopover(el, notifyHtml(), "notify", "w-80");
     case "type":
       typeFilter = el.dataset.val;
+      groupFilter = "all";
       closePop();
       syncTypeLabel();
+      syncGroupPills();
+      page = 1;
+      render();
+      return;
+    case "group":
+      groupFilter = el.dataset.val;
+      typeFilter = "all";
+      syncTypeLabel();
+      syncGroupPills();
       page = 1;
       render();
       return;
@@ -828,6 +851,7 @@ function init() {
   });
 
   syncTypeLabel();
+  syncGroupPills();
   setView("files");
   applyTheme(localStorage.getItem("theme") === "light" ? "light" : "dark");
   refreshPermission();
