@@ -61,10 +61,16 @@ html, body { max-width: 100%; }
 
 /* ---------- home dot grid ---------- */
 #viewHome {
+  position: relative;
   flex: 1;
   min-height: calc(100vh - 3.5rem);
+  overflow: hidden;
   background-color: rgb(var(--c-background));
-  background-image: radial-gradient(circle, rgb(var(--c-outline-variant)) 1.2px, transparent 1.6px);
-  background-size: 22px 22px;
-  background-position: 11px 11px;
+  touch-action: pan-y;
+}
+#dotCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
 }
