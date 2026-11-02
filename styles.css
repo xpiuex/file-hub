@@ -59,20 +59,48 @@ html, body { max-width: 100%; }
   #sidebar.open { position: relative; z-index: auto; }
 }
 
-/* ---------- home dot grid ---------- */
-#viewHome {
+/* ---------- พื้นหลังไล่สีที่ขยับ (หน้าแรกและหน้าล็อกอิน) ---------- */
+#viewHome,
+#loginScreen {
   position: relative;
-  flex: 1;
-  min-height: calc(100vh - 3.5rem);
+  isolation: isolate;
   overflow: hidden;
   background-color: rgb(var(--c-background));
+}
+#viewHome::before,
+#loginScreen::before {
+  content: "";
+  position: absolute;
+  inset: -15%;
+  z-index: -1;
+  pointer-events: none;
   background-image:
-    radial-gradient(60% 55% at 15% 20%, rgb(var(--c-primary-container) / 0.35), transparent 70%),
-    radial-gradient(50% 50% at 85% 25%, rgb(var(--c-tertiary-container) / 0.30), transparent 70%),
-    radial-gradient(60% 60% at 70% 90%, rgb(var(--c-secondary-container) / 0.40), transparent 70%),
-    radial-gradient(45% 45% at 10% 90%, rgb(var(--c-primary) / 0.18), transparent 70%);
+    radial-gradient(40% 36% at 18% 22%, rgb(var(--c-primary-container) / 0.40), transparent 70%),
+    radial-gradient(34% 32% at 84% 26%, rgb(var(--c-tertiary-container) / 0.32), transparent 70%),
+    radial-gradient(42% 40% at 72% 88%, rgb(var(--c-secondary-container) / 0.45), transparent 70%),
+    radial-gradient(32% 30% at 12% 88%, rgb(var(--c-primary) / 0.22), transparent 70%);
+  animation: aurora-drift 22s ease-in-out infinite alternate;
+}
+#viewHome {
+  flex: 1;
+  min-height: calc(100vh - 3.5rem);
   touch-action: pan-y;
 }
+#loginScreen > div {
+  position: relative;
+  z-index: 1;
+}
+@keyframes aurora-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+  50%  { transform: translate3d(4%, -3%, 0) scale(1.06) rotate(2deg); }
+  100% { transform: translate3d(-3%, 4%, 0) scale(0.98) rotate(-2deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #viewHome::before,
+  #loginScreen::before { animation: none; }
+}
+
+/* ---------- home dot grid ---------- */
 #dotCanvas {
   position: absolute;
   top: 0;
