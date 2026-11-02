@@ -481,6 +481,281 @@ function render() {
   es.classList.toggle("flex", showEmpty);
   document.getElementById("tableCard").classList.toggle("hidden", showEmpty);
 
+  const pages = Math.max(1, Math.ceil(1].textContent = typeFilter === "all" ? t("type_all") : t("type_" + typeFilter);
+}
+
+/* ---------- การล็อกอิน: Google ผ่าน Firebase Auth + สิทธิ์จาก allowed_emails ---------- */
+const loginScreen = document.getElementById("loginScreen");
+const logoutBtn = document.getElementById("logoutBtn");
+const viewHome = document.getElementById("viewHome");
+const viewWorkspace = document.getElementById("viewWorkspace");
+const sidebarEl = document.getElementById("sidebar");
+const headerNav = document.getElementById("headerNav");
+
+let authReady = false;
+let rejecting = false;
+
+function showLogin(msg = "") {
+  loginScreen.classList.remove("hidden");
+  loginScreen.classList.add("flex");
+  document.getElementById("loginMsg").textContent = msg;
+}
+
+function hideLogin() {
+  loginScreen.classList.add("hidden");
+  loginScreen.classList.remove("flex");
+}
+
+async function refreshPermission() {
+  if (!fbUser) {
+    canDelete = false;
+  } else {
+    const { data, error } = await sb.rpc("is_allowed");
+    canDelete = !error && data === true;
+  }
+  logoutBtn.textContent = fbUser ? t("logout") : t("login");
+}
+
+async function signInGoogle() {
+  if (!fbAuth) return showLogin(t("firebase_not_set"));
+  const provider = new GoogleAuthProvider();
+  try {
+    await signInWithPopup(fbAuth, provider);
+  } catch (e) {
+    // มือถือบางรุ่นบล็อก popup ให้เปลี่ยนไปใช้การเปลี่ยนหน้าแทน
+    if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") {
+      return signInWithRedirect(fbAuth, provider);
+    }
+    if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") {
+      showLogin(e.message);
+    }
+  }
+}
+
+// ทำงานเฉพาะเมื่อมีสิทธิ์ ถ้าไม่มีจะแสดงหน้าล็อกอินแล้วทำงานต่อหลังล็อกอิน
+async function requireAdmin(action) {
+  await refreshPermission();
+  if (canDelete) return action();
+  pendingAction = action;
+  showLogin(t("login_need_perm"));
+}
+
+const authListener = async (user) => {
+  fbUser = user;
+  if (!user && rejecting) {
+    rejecting = false;
+    authReady = true;
+    await refreshPermission();
+    return showLogin(t("no_access"));
+  }
+  await refreshPermission();
+  authReady = true;
+
+  if (user && !canDelete) {
+    // ล็อกอินได้แต่อีเมลไม่อยู่ในรายการ: ออกจากระบบและแจ้งเตือน
+    rejecting = true;
+    pendingAction = null;
+    await fbSignOut(fbAuth);
+    return;
+  }
+  if (user && canDelete) {
+    hideLogin();
+    if (pendingAction) {
+      const action = pendingAction;
+      pendingAction = null;
+      await action();
+    }
+  }
+  routeFromHash();
+};
+if (fbAuth) {
+  onAuthStateChanged(fbAuth, authListener);
+} else {
+  authReady = true;
+  routeFromHash();
+}
+
+document.getElementById("googleLoginBtn").addEventListener("click", signInGoogle);
+
+document.getElementById("loginCancel")?.addEventListener("click", () => {
+  pendingAction = null;
+  hideLogin();
+  // กลับหน้าแรกทันที เพื่อให้กด room-work อีกครั้งแล้วขึ้นหน้าล็อกอินได้
+  location.hash = "";
+  setPage("home");
+});
+
+logoutBtn.addEventListener("click", async () => {
+  if (fbUser) {
+    await fbSignOut(fbAuth);
+    location.hash = "";
+    location.reload();
+  } else {
+    showLogin("");
+  }
+});
+
+/* ---------- เส้นทางหน้า: หน้าแรก (สาธารณะ) / room-work (Google + อยู่ในรายการอนุญาต) ---------- */
+function setSidebarOpen(open) {
+  sidebarEl.classList.toggle("open", open);
+  document.getElementById("sidebarBackdrop").classList.toggle("hidden", !open);
+}
+
+function setPage(name) {
+  const ws = name === "workspace";
+  viewHome.classList.toggle("hidden", ws);
+  document.body.classList.toggle("home-page", !ws);
+  viewWorkspace.classList.toggle("hidden", !ws);
+  headerNav.classList.toggle("hidden", !ws);
+  document.getElementById("headerUpload").style.display = ws ? "" : "none";
+  // เมนูข้างและปุ่มเมนูมือถือแสดงเฉพาะในหน้า room-work
+  sidebarEl.classList.toggle("is-hidden", !ws);
+  document.getElementById("menuBtn").classList.toggle("is-hidden", !ws);
+  document.querySelectorAll(".sidebar-link").forEach((a) => {
+    a.classList.toggle("is-active", a.dataset.route === name);
+  });
+  setSidebarOpen(false);
+  if (ws) loadAll();
+}
+
+function routeFromHash() {
+  if (!authReady) return;
+  if (location.hash !== "#room-work") return setPage("home");
+  if (fbUser && canDelete) {
+    hideLogin();
+    return setPage("workspace");
+  }
+  setPage("home");
+  if (!fbUser) showLogin(t("need_login_enter"));
+}
+window.addEventListener("hashchange", routeFromHash);
+
+document.getElementById("menuBtn").addEventListener("click", () => {
+  setSidebarOpen(!sidebarEl.classList.contains("open"));
+});
+document.getElementById("sidebarBackdrop").addEventListener("click", () => setSidebarOpen(false));
+
+/* ---------- ขนาดพื้นที่ ---------- */
+async function loadUsage() {
+  const { data, error } = await sb.rpc("get_storage_usage");
+  if (error) {
+    document.getElementById("dbText").textContent = t("read_failed");
+    document.getElementById("stText").textContent = t("read_failed");
+    return;
+  }
+  const pct = (v, l) => Math.min(100, (v / l) * 100);
+  const db = Number(data.db_bytes || 0);
+  const st = Number(data.storage_bytes || 0);
+
+  document.getElementById("dbText").textContent = `${fmtSize(db)} / ${fmtSize(DB_LIMIT)}`;
+  document.getElementById("dbBar").style.width = pct(db, DB_LIMIT) + "%";
+  document.getElementById("dbPct").textContent = t("used_pct", { v: pct(db, DB_LIMIT).toFixed(1) });
+
+  document.getElementById("stText").textContent = `${fmtSize(st)} / ${fmtSize(STORAGE_LIMIT)}`;
+  document.getElementById("stBar").style.width = pct(st, STORAGE_LIMIT) + "%";
+  document.getElementById("stPct").textContent = t("used_pct", { v: pct(st, STORAGE_LIMIT).toFixed(1) });
+}
+document.getElementById("usageRefreshBtn").addEventListener("click", loadUsage);
+
+/* ---------- โหลดและแสดงข้อมูล ---------- */
+async function loadAll() {
+  const [p, f, s] = await Promise.all([
+    sb.from("projects").select("*").order("created_at", { ascending: false }),
+    sb.from("files").select("*").order("uploaded_at", { ascending: false }),
+    sb.from("share_links").select("file_id, expires_at").gt("expires_at", new Date().toISOString()),
+  ]);
+  const err = p.error || f.error;
+  if (err) return showToast(err.message, "error");
+  if (s.error) console.warn("Share list failed (SQL not run?):", s.error.message);
+
+  projects = p.data;
+  files = f.data;
+  shareRows = s.error ? [] : s.data;
+  const ids = new Set(files.map((x) => x.id));
+  selected = new Set([...selected].filter((id) => ids.has(id)));
+  render();
+  loadUsage();
+}
+
+function computeShown() {
+  const q = searchQ.toLowerCase();
+  const now = Date.now();
+  const sharedIds = new Set(shareRows.map((r) => r.file_id));
+
+  let list;
+  if (view === "trash") {
+    list = files.filter((f) => f.deleted_at);
+  } else {
+    list = files.filter((f) => !f.deleted_at);
+    if (view === "recent") list = list.filter((f) => now - new Date(f.uploaded_at).getTime() <= RECENT_DAYS * 864e5);
+    if (view === "shared") list = list.filter((f) => sharedIds.has(f.id));
+  }
+  if (typeFilter !== "all") list = list.filter((f) => fileType(f.file_name) === typeFilter);
+  if (groupFilter !== "all") list = list.filter((f) => GROUPS[groupFilter].includes(fileType(f.file_name)));
+  if (q) list = list.filter((f) =>
+    f.file_name.toLowerCase().includes(q) || projectName(f.project_id).toLowerCase().includes(q));
+  return list;
+}
+
+function emptyMessage() {
+  return {
+    files: t("empty_search"),
+    shared: t("empty_shared"),
+    recent: t("empty_recent", { n: RECENT_DAYS }),
+    trash: t("empty_trash"),
+  }[view];
+}
+
+function rowHtml(f) {
+  const info = fileInfo(f.file_name);
+  const id = esc(f.id);
+  return `
+  <tr class="bg-transparent hover:bg-surface-container/40 transition-colors group">
+    <td class="px-4 py-3 text-center">
+      <input class="row-checkbox w-4 h-4 rounded bg-surface border-outline-variant text-primary-container focus:ring-primary-container focus:ring-offset-surface cursor-pointer" data-id="${id}" type="checkbox" ${selected.has(f.id) ? "checked" : ""}/>
+    </td>
+    <td class="px-4 py-3">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${info.cls}">
+          <span class="material-symbols-outlined !text-[18px]">${info.icon}</span>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-medium text-on-surface truncate group-hover:text-primary transition-colors">${esc(f.file_name)}</span>
+          <span class="font-body-sm text-body-sm text-outline truncate">${esc(info.label)}</span>
+        </div>
+      </div>
+    </td>
+    <td class="px-4 py-3">
+      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-label-md font-medium bg-surface-container-high text-on-surface border border-outline-variant">${esc(projectName(f.project_id))}</span>
+    </td>
+    <td class="px-4 py-3 font-code-inline text-code-inline text-on-surface-variant tabular-nums">${fmtSize(f.file_size)}</td>
+    <td class="px-4 py-3 text-on-surface-variant font-body-sm text-body-sm">${fmtDate(f.uploaded_at)}</td>
+    <td class="px-4 py-3 text-right">
+      <button type="button" class="p-1 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-act="menu" data-id="${id}" title="${t('more_options')}">
+        <span class="material-symbols-outlined !text-[18px] pointer-events-none">more_horiz</span>
+      </button>
+    </td>
+  </tr>`;
+}
+
+function applyColumns() {
+  document.querySelectorAll("table tr").forEach((tr) => {
+    [...tr.children].forEach((cell, i) => {
+      const key = COL_KEYS[i];
+      if (key) cell.style.display = cols[key] ? "" : "none";
+    });
+  });
+}
+
+function render() {
+  shown = computeShown();
+
+  const showEmpty = view === "files" && files.filter((f) => !f.deleted_at).length === 0;
+  const es = document.getElementById("emptyState");
+  es.classList.toggle("hidden", !showEmpty);
+  es.classList.toggle("flex", showEmpty);
+  document.getElementById("tableCard").classList.toggle("hidden", showEmpty);
+
   const pages = Math.max(1, Math.ceil(shown.length / perPage));
   page = Math.min(page, pages);
   const slice = shown.slice((page - 1) * perPage, page * perPage);
