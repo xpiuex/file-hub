@@ -8,15 +8,11 @@ const SUPABASE_URL = "https://qxatfxjaemqumxhgqlgu.supabase.co";
 const SUPABASE_KEY = "sb_publishable_kFK1TySyqbOldG1X2FcijA_aFi9Udpk";
 
 // ตั้งค่า Firebase (คัดลอกจาก Firebase Console → Project settings → Your apps)
-const firebaseConfig = {
-  apiKey: "AIzaSyCLhvHij49dsfmmdKFOB4tYMxC1F4r7oxs",
-  authDomain: "fen-board.firebaseapp.com",
-  databaseURL: "https://fen-board-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "fen-board",
-  storageBucket: "fen-board.firebasestorage.app",
-  messagingSenderId: "1002777913125",
-  appId: "1:1002777913125:web:9e32ce19faa76e3bf21ccc",
-  measurementId: "G-EMY1BC93LD"
+const FIREBASE_CONFIG = {
+  apiKey: "ใส่ apiKey",
+  authDomain: "ใส่ authDomain",
+  projectId: "ใส่ projectId",
+  appId: "ใส่ appId",
 };
 /* ================== */
 
@@ -35,8 +31,14 @@ const NAV_ACTIVE = "text-on-surface font-label-md text-label-md border-b-2 borde
 const NAV_INACTIVE = "text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface";
 const COL_KEYS = { 2: "category", 3: "size", 4: "date" };
 
-const fbApp = initializeApp(FIREBASE_CONFIG);
-const fbAuth = getAuth(fbApp);
+// ถ้ายังไม่ได้ตั้งค่า Firebase ให้ข้ามไป เพื่อให้หน้าเว็บยังกดได้ตามปกติ
+const FIREBASE_READY = !Object.values(FIREBASE_CONFIG).some((v) => String(v).startsWith("ใส่"));
+let fbAuth = null;
+try {
+  if (FIREBASE_READY) fbAuth = getAuth(initializeApp(FIREBASE_CONFIG));
+} catch (err) {
+  console.error("Firebase init failed:", err);
+}
 let fbUser = null;
 
 // ส่ง ID token ของ Firebase ให้ Supabase ทุกคำขอ เพื่อให้ RLS เห็นอีเมลที่ล็อกอิน
@@ -240,6 +242,7 @@ async function refreshPermission() {
 }
 
 async function signInGoogle() {
+  if (!fbAuth) return showLogin(t("firebase_not_set"));
   const provider = new GoogleAuthProvider();
   try {
     await signInWithPopup(fbAuth, provider);
@@ -262,7 +265,7 @@ async function requireAdmin(action) {
   showLogin(t("login_need_perm"));
 }
 
-onAuthStateChanged(fbAuth, async (user) => {
+const authListener = async (user) => {
   fbUser = user;
   if (!user && rejecting) {
     rejecting = false;
@@ -289,7 +292,13 @@ onAuthStateChanged(fbAuth, async (user) => {
     }
   }
   routeFromHash();
-});
+};
+if (fbAuth) {
+  onAuthStateChanged(fbAuth, authListener);
+} else {
+  authReady = true;
+  routeFromHash();
+}
 
 document.getElementById("googleLoginBtn").addEventListener("click", signInGoogle);
 
