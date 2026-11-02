@@ -60,9 +60,13 @@ html, body { max-width: 100%; }
 }
 
 /* ---------- พื้นหลังไล่สีที่ขยับ (หน้าแรกและหน้าล็อกอิน) ---------- */
-#viewHome,
-#loginScreen {
+#viewHome {
   position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: rgb(var(--c-background));
+}
+#loginScreen {
   isolation: isolate;
   overflow: hidden;
   background-color: rgb(var(--c-background));
@@ -79,7 +83,7 @@ html, body { max-width: 100%; }
     radial-gradient(34% 32% at 84% 26%, rgb(var(--c-tertiary-container) / 0.32), transparent 70%),
     radial-gradient(42% 40% at 72% 88%, rgb(var(--c-secondary-container) / 0.45), transparent 70%),
     radial-gradient(32% 30% at 12% 88%, rgb(var(--c-primary) / 0.22), transparent 70%);
-  animation: aurora-drift 22s ease-in-out infinite alternate;
+  animation: aurora-drift 14s ease-in-out infinite alternate;
 }
 #viewHome {
   flex: 1;
@@ -91,9 +95,9 @@ html, body { max-width: 100%; }
   z-index: 1;
 }
 @keyframes aurora-drift {
-  0%   { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
-  50%  { transform: translate3d(4%, -3%, 0) scale(1.06) rotate(2deg); }
-  100% { transform: translate3d(-3%, 4%, 0) scale(0.98) rotate(-2deg); }
+  0%   { transform: translate3d(-8%, -6%, 0) scale(1.05) rotate(-4deg); }
+  50%  { transform: translate3d(8%, 4%, 0) scale(1.15) rotate(4deg); }
+  100% { transform: translate3d(-4%, 8%, 0) scale(1.08) rotate(-2deg); }
 }
 @media (prefers-reduced-motion: reduce) {
   #viewHome::before,
