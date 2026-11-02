@@ -1,8 +1,19 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut as fbSignOut }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
 /* ===== ตั้งค่า ===== */
 const SUPABASE_URL = "https://qxatfxjaemqumxhgqlgu.supabase.co";
 const SUPABASE_KEY = "sb_publishable_kFK1TySyqbOldG1X2FcijA_aFi9Udpk";
+
+// ตั้งค่า Firebase (คัดลอกจาก Firebase Console → Project settings → Your apps)
+const FIREBASE_CONFIG = {
+  apiKey: "ใส่ apiKey",
+  authDomain: "ใส่ authDomain",
+  projectId: "ใส่ projectId",
+  appId: "ใส่ appId",
+};
 /* ================== */
 
 const BUCKET = "project-files";
@@ -20,7 +31,14 @@ const NAV_ACTIVE = "text-on-surface font-label-md text-label-md border-b-2 borde
 const NAV_INACTIVE = "text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface";
 const COL_KEYS = { 2: "category", 3: "size", 4: "date" };
 
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const fbApp = initializeApp(FIREBASE_CONFIG);
+const fbAuth = getAuth(fbApp);
+let fbUser = null;
+
+// ส่ง ID token ของ Firebase ให้ Supabase ทุกคำขอ เพื่อให้ RLS เห็นอีเมลที่ล็อกอิน
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  accessToken: async () => (fbUser ? fbUser.getIdToken() : null),
+});
 
 let projects = [];
 let files = [];
@@ -185,9 +203,16 @@ function syncTypeLabel() {
   typeBtn.querySelectorAll("span")[1].textContent = typeFilter === "all" ? t("type_all") : t("type_" + typeFilter);
 }
 
-/* ---------- สิทธิ์และการล็อกอิน ---------- */
+/* ---------- การล็อกอิน: Google ผ่าน Firebase Auth + สิทธิ์จาก allowed_emails ---------- */
 const loginScreen = document.getElementById("loginScreen");
 const logoutBtn = document.getElementById("logoutBtn");
+const viewHome = document.getElementById("viewHome");
+const viewWorkspace = document.getElementById("viewWorkspace");
+const sidebarEl = document.getElementById("sidebar");
+const headerNav = document.getElementById("headerNav");
+
+let authReady = false;
+let rejecting = false;
 
 function showLogin(msg = "") {
   loginScreen.classList.remove("hidden");
@@ -201,19 +226,29 @@ function hideLogin() {
 }
 
 async function refreshPermission() {
-  const { data: { session } } = await sb.auth.getSession();
-  logoutBtn.textContent = session ? t("logout") : t("login");
-  if (!session) {
+  if (!fbUser) {
     canDelete = false;
-    return;
+  } else {
+    const { data, error } = await sb.rpc("is_allowed");
+    canDelete = !error && data === true;
   }
-  const { data, error } = await sb.rpc("is_allowed");
-  canDelete = !error && data === true;
+  logoutBtn.textContent = fbUser ? t("logout") : t("login");
 }
 
-sb.auth.onAuthStateChange(() => {
-  setTimeout(refreshPermission, 0);
-});
+async function signInGoogle() {
+  const provider = new GoogleAuthProvider();
+  try {
+    await signInWithPopup(fbAuth, provider);
+  } catch (e) {
+    // มือถือบางรุ่นบล็อก popup ให้เปลี่ยนไปใช้การเปลี่ยนหน้าแทน
+    if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") {
+      return signInWithRedirect(fbAuth, provider);
+    }
+    if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") {
+      showLogin(e.message);
+    }
+  }
+}
 
 // ทำงานเฉพาะเมื่อมีสิทธิ์ ถ้าไม่มีจะแสดงหน้าล็อกอินแล้วทำงานต่อหลังล็อกอิน
 async function requireAdmin(action) {
@@ -223,29 +258,36 @@ async function requireAdmin(action) {
   showLogin(t("login_need_perm"));
 }
 
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPassword").value;
-
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) return showLogin(t("login_failed") + ": " + error.message);
-
-  await refreshPermission();
-  if (!canDelete) {
-    await sb.auth.signOut();
-    pendingAction = null;
-    return showLogin(t("login_not_allowed"));
+onAuthStateChanged(fbAuth, async (user) => {
+  fbUser = user;
+  if (!user && rejecting) {
+    rejecting = false;
+    authReady = true;
+    await refreshPermission();
+    return showLogin(t("no_access"));
   }
+  await refreshPermission();
+  authReady = true;
 
-  hideLogin();
-  document.getElementById("loginPassword").value = "";
-  showToast(t("logged_in"));
-
-  const action = pendingAction;
-  pendingAction = null;
-  if (action) await action();
+  if (user && !canDelete) {
+    // ล็อกอินได้แต่อีเมลไม่อยู่ในรายการ: ออกจากระบบและแจ้งเตือน
+    rejecting = true;
+    pendingAction = null;
+    await fbSignOut(fbAuth);
+    return;
+  }
+  if (user && canDelete) {
+    hideLogin();
+    if (pendingAction) {
+      const action = pendingAction;
+      pendingAction = null;
+      await action();
+    }
+  }
+  routeFromHash();
 });
+
+document.getElementById("googleLoginBtn").addEventListener("click", signInGoogle);
 
 document.getElementById("loginCancel")?.addEventListener("click", () => {
   pendingAction = null;
@@ -253,14 +295,52 @@ document.getElementById("loginCancel")?.addEventListener("click", () => {
 });
 
 logoutBtn.addEventListener("click", async () => {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    await sb.auth.signOut();
-    showToast(t("logged_out"));
+  if (fbUser) {
+    await fbSignOut(fbAuth);
+    location.hash = "";
+    location.reload();
   } else {
     showLogin("");
   }
 });
+
+/* ---------- เส้นทางหน้า: หน้าแรก (สาธารณะ) / room-work (Google + อยู่ในรายการอนุญาต) ---------- */
+function setSidebarOpen(open) {
+  sidebarEl.classList.toggle("open", open);
+  document.getElementById("sidebarBackdrop").classList.toggle("hidden", !open);
+}
+
+function setPage(name) {
+  const ws = name === "workspace";
+  viewHome.classList.toggle("hidden", ws);
+  viewWorkspace.classList.toggle("hidden", !ws);
+  headerNav.classList.toggle("hidden", !ws);
+  document.querySelectorAll("#sidebar .sidebar-link").forEach((a) => {
+    const on = a.dataset.route === name;
+    a.classList.toggle("bg-surface-container-high", on);
+    a.classList.toggle("text-on-surface", on);
+    a.classList.toggle("font-medium", on);
+  });
+  setSidebarOpen(false);
+  if (ws) loadAll();
+}
+
+function routeFromHash() {
+  if (!authReady) return;
+  if (location.hash !== "#room-work") return setPage("home");
+  if (fbUser && canDelete) {
+    hideLogin();
+    return setPage("workspace");
+  }
+  setPage("home");
+  if (!fbUser) showLogin(t("need_login_enter"));
+}
+window.addEventListener("hashchange", routeFromHash);
+
+document.getElementById("menuBtn").addEventListener("click", () => {
+  setSidebarOpen(!sidebarEl.classList.contains("open"));
+});
+document.getElementById("sidebarBackdrop").addEventListener("click", () => setSidebarOpen(false));
 
 /* ---------- ขนาดพื้นที่ ---------- */
 async function loadUsage() {
@@ -900,8 +980,7 @@ function init() {
   updateLangLabel();
   setView("files");
   applyTheme(localStorage.getItem("theme") === "light" ? "light" : "dark");
-  refreshPermission();
-  loadAll();
+  routeFromHash();
 }
 
 function updateLangLabel() {
@@ -915,8 +994,10 @@ window.addEventListener("langchange", () => {
   syncTypeLabel();
   syncGroupPills();
   refreshPermission();
-  render();
-  loadUsage();
+  if (!viewWorkspace.classList.contains("hidden")) {
+    render();
+    loadUsage();
+  }
 });
 
 document.getElementById("langToggleBtn").addEventListener("click", () => {
