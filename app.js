@@ -8,7 +8,7 @@ const SUPABASE_URL = "https://qxatfxjaemqumxhgqlgu.supabase.co";
 const SUPABASE_KEY = "sb_publishable_kFK1TySyqbOldG1X2FcijA_aFi9Udpk";
 
 // ตั้งค่า Firebase (คัดลอกจาก Firebase Console → Project settings → Your apps)
-const firebaseConfig = {
+const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCLhvHij49dsfmmdKFOB4tYMxC1F4r7oxs",
   authDomain: "fen-board.firebaseapp.com",
   projectId: "fen-board",
