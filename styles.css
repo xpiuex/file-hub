@@ -1,4 +1,4 @@
-    .material-symbols-outlined {
+.material-symbols-outlined {
       font-size: 18px;
       line-height: 1;
       display: inline-block;
@@ -49,4 +49,22 @@ html, body { max-width: 100%; }
   #tableCard .overflow-x-auto {
     overflow-x: hidden;
   }
+}
+
+/* ---------- sidebar behaviour ---------- */
+#sidebar { display: none; }
+#sidebar.open { display: flex; position: fixed; top: 0; bottom: 0; left: 0; z-index: 60; }
+@media (min-width: 768px) {
+  #sidebar { display: flex; }
+  #sidebar.open { position: relative; z-index: auto; }
+}
+
+/* ---------- home dot grid ---------- */
+#viewHome {
+  flex: 1;
+  min-height: calc(100vh - 3.5rem);
+  background-color: rgb(var(--c-background));
+  background-image: radial-gradient(circle, rgb(var(--c-outline-variant)) 1.2px, transparent 1.6px);
+  background-size: 22px 22px;
+  background-position: 11px 11px;
 }
