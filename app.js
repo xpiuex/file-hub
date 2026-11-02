@@ -9,10 +9,10 @@ const SUPABASE_KEY = "sb_publishable_kFK1TySyqbOldG1X2FcijA_aFi9Udpk";
 
 // ตั้งค่า Firebase (คัดลอกจาก Firebase Console → Project settings → Your apps)
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCLhvHij49dsfmmdKFOB4tYMxC1F4r7oxs",
-  authDomain: "fen-board.firebaseapp.com",
-  projectId: "fen-board",
-  appId: "1:1002777913125:web:9e32ce19faa76e3bf21ccc",
+  apiKey: "ใส่ apiKey",
+  authDomain: "ใส่ authDomain",
+  projectId: "ใส่ projectId",
+  appId: "ใส่ appId",
 };
 /* ================== */
 
@@ -305,6 +305,9 @@ document.getElementById("googleLoginBtn").addEventListener("click", signInGoogle
 document.getElementById("loginCancel")?.addEventListener("click", () => {
   pendingAction = null;
   hideLogin();
+  // กลับหน้าแรกทันที เพื่อให้กด room-work อีกครั้งแล้วขึ้นหน้าล็อกอินได้
+  location.hash = "";
+  setPage("home");
 });
 
 logoutBtn.addEventListener("click", async () => {
@@ -330,11 +333,11 @@ function setPage(name) {
   viewWorkspace.classList.toggle("hidden", !ws);
   headerNav.classList.toggle("hidden", !ws);
   document.getElementById("headerUpload").style.display = ws ? "" : "none";
-  document.querySelectorAll("#sidebar .sidebar-link").forEach((a) => {
-    const on = a.dataset.route === name;
-    a.classList.toggle("bg-surface-container-high", on);
-    a.classList.toggle("text-on-surface", on);
-    a.classList.toggle("font-medium", on);
+  // เมนูข้างและปุ่มเมนูมือถือแสดงเฉพาะในหน้า room-work
+  sidebarEl.classList.toggle("is-hidden", !ws);
+  document.getElementById("menuBtn").classList.toggle("is-hidden", !ws);
+  document.querySelectorAll(".sidebar-link").forEach((a) => {
+    a.classList.toggle("is-active", a.dataset.route === name);
   });
   setSidebarOpen(false);
   if (ws) loadAll();
