@@ -9,14 +9,10 @@ const SUPABASE_KEY = "sb_publishable_kFK1TySyqbOldG1X2FcijA_aFi9Udpk";
 
 // ตั้งค่า Firebase (คัดลอกจาก Firebase Console → Project settings → Your apps)
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCLhvHij49dsfmmdKFOB4tYMxC1F4r7oxs",
-  authDomain: "fen-board.firebaseapp.com",
-  databaseURL: "https://fen-board-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "fen-board",
-  storageBucket: "fen-board.firebasestorage.app",
-  messagingSenderId: "1002777913125",
-  appId: "1:1002777913125:web:9e32ce19faa76e3bf21ccc",
-  measurementId: "G-EMY1BC93LD"
+  apiKey: "ใส่ apiKey",
+  authDomain: "ใส่ authDomain",
+  projectId: "ใส่ projectId",
+  appId: "ใส่ appId",
 };
 /* ================== */
 
@@ -317,8 +313,10 @@ function setSidebarOpen(open) {
 function setPage(name) {
   const ws = name === "workspace";
   viewHome.classList.toggle("hidden", ws);
+  document.body.classList.toggle("home-page", !ws);
   viewWorkspace.classList.toggle("hidden", !ws);
   headerNav.classList.toggle("hidden", !ws);
+  document.getElementById("headerUpload").style.display = ws ? "" : "none";
   document.querySelectorAll("#sidebar .sidebar-link").forEach((a) => {
     const on = a.dataset.route === name;
     a.classList.toggle("bg-surface-container-high", on);
