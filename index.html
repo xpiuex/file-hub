@@ -1,287 +1,127 @@
-<!DOCTYPE html>
-<html class="dark" lang="th"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>DataGrid - Files &amp; Assets</title>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
-<script src="theme.js"></script>
-<script src="i18n.js"></script>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="tailwind-config.js"></script>
-<link rel="stylesheet" href="styles.css"/>
-</head>
-<body class="bg-background text-on-surface antialiased font-body-md text-body-md min-h-screen md:h-screen flex flex-col md:overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+/* พื้นหลังจุดของหน้าแรก: ตาราง (grid) ที่ผลักออกจากเมาส์ (เดสก์ท็อป) หรือจุดสัมผัส (มือถือ/แท็บเล็ต) */
+(function () {
+  const section = document.getElementById("viewHome");
+  if (!section) return;
 
-<input type="file" id="fileInputHidden" class="hidden">
+  const canvas = document.createElement("canvas");
+  canvas.id = "dotCanvas";
+  canvas.setAttribute("aria-hidden", "true");
+  section.prepend(canvas);
+  const ctx = canvas.getContext("2d");
 
-<!-- LOGIN SCREEN -->
-<div id="loginScreen" class="hidden fixed inset-0 z-[100] bg-surface items-center justify-center p-4">
-<div class="w-full max-w-sm bg-surface-container-low border border-outline-variant rounded-xl p-6 space-y-3">
-<h2 class="font-headline-md text-headline-md text-on-surface" data-i18n="login">เข้าสู่ระบบ</h2>
-<button type="button" id="googleLoginBtn" class="w-full h-9 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-on-surface/90 flex items-center justify-center gap-2"><span class="material-symbols-outlined !text-[16px]">account_circle</span><span data-i18n="google_login">เข้าสู่ระบบด้วย Google</span></button>
-<button type="button" id="loginCancel" class="w-full h-9 rounded-lg border border-outline-variant text-on-surface font-label-md text-label-md hover:bg-surface-container" data-i18n="login_cancel">ยกเลิก</button>
-<p id="loginMsg" class="text-body-sm text-error min-h-[1rem]"></p>
-</div>
-</div>
+  const SPACING = 22;      // ระยะห่างระหว่างจุด (px)
+  const DOT = 1.3;         // รัศมีจุด (px)
+  const R_MOUSE = 120;     // รัศมีอิทธิพลของเมาส์
+  const R_TOUCH = 150;     // รัศมีอิทธิพลของการสัมผัส
+  const FORCE = 3.2;       // แรงผลัก
+  const K = 0.06;          // แรงดึงกลับไปตำแหน่งเดิม (สปริง)
+  const DAMP = 0.82;       // แรงหน่วง ทำให้เคลื่อนไหวลื่นและหยุดนิ่ง
 
-<!-- TOP NAV BAR -->
-<header class="flex flex-wrap justify-between items-center gap-2 min-h-[3.5rem] py-2 px-3 md:px-6 w-full border-b border-outline-variant bg-surface shrink-0 z-30">
-<button type="button" id="menuBtn" data-i18n-title="menu_open" class="md:hidden p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors">
-<span class="material-symbols-outlined">menu</span>
-</button>
-<div class="flex items-center gap-6">
-<nav id="headerNav" class="flex items-center gap-4 overflow-x-auto whitespace-nowrap min-w-0 md:ml-2">
-<a class="text-on-surface font-label-md text-label-md border-b-2 border-primary-container pb-1 transition-colors" href="#" data-view="files"><span data-i18n="nav_files">Files</span></a>
-<a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="shared"><span data-i18n="nav_shared">Shared</span></a>
-<a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="recent"><span data-i18n="nav_recent">Recent</span></a>
-<a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="trash"><span data-i18n="nav_trash">Trash</span></a>
-</nav>
-</div>
-<div class="flex items-center gap-2">
-<button type="button" id="langToggleBtn" data-i18n-title="lang_btn_title" class="h-8 px-2 rounded-lg border border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-sm text-label-sm transition-colors active:scale-[0.98]"><span id="langLabel">EN</span></button>
-<button class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150 active:scale-[0.98]" id="themeToggleBtn" title="Toggle theme">
-<span class="material-symbols-outlined">dark_mode</span>
-</button>
-<div class="h-4 w-[1px] bg-outline-variant mx-1"></div>
-<button class="h-8 px-3 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-on-surface/90 active:scale-[0.98] transition-all hidden md:flex items-center gap-1.5 shadow-sm" data-upload>
-<span class="material-symbols-outlined !text-[16px]">add</span>
-<span><span data-i18n="upload_file">Upload File</span></span>
-</button>
-<button id="logoutBtn" class="h-8 px-3 whitespace-nowrap shrink-0 rounded-lg border border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-md text-label-md transition-colors">ออกจากระบบ</button>
-<div class="ml-1 w-7 h-7 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center overflow-hidden">
-<span class="material-symbols-outlined !text-[16px] text-on-surface-variant">person</span>
-</div>
-</div>
-</header>
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let w = 0, h = 0, dpr = 1, dots = [];
+  let ptr = { active: false, x: 0, y: 0, r: R_MOUSE };
+  let visible = false, running = false;
 
-<!-- MAIN APP CONTAINER -->
-<div class="flex-1 flex md:overflow-hidden">
+  function build() {
+    const rect = section.getBoundingClientRect();
+    w = rect.width;
+    h = rect.height;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-<!-- MAIN VIEW CANVAS -->
-<div id="sidebarBackdrop" class="hidden fixed inset-0 bg-black/50 z-50 md:hidden"></div>
-<aside id="sidebar" class="w-56 shrink-0 flex-col gap-1 p-3 border-r border-outline-variant bg-surface-container-lowest">
-<a href="#" class="sidebar-link flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-colors" data-route="home"><span class="material-symbols-outlined !text-[18px]">home</span><span data-i18n="sidebar_home">หน้าแรก</span></a>
-<a href="#room-work" class="sidebar-link flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-colors" data-route="workspace"><span class="material-symbols-outlined !text-[18px]">folder</span><span>room-work</span></a>
-</aside>
-<main class="flex-1 flex flex-col min-w-0 bg-background md:overflow-y-auto">
-<section id="viewHome"></section>
-<section id="viewWorkspace" class="hidden">
-<div class="max-w-[1400px] w-full mx-auto p-4 md:p-6 lg:p-8 space-y-6">
-<div id="siteName" class="text-right font-headline-sm text-headline-sm font-semibold text-on-surface tracking-tight">AskFile</div>
+    dots = [];
+    const cols = Math.ceil(w / SPACING) + 1;
+    const rows = Math.ceil(h / SPACING) + 1;
+    const offX = (w - (cols - 1) * SPACING) / 2;
+    const offY = (h - (rows - 1) * SPACING) / 2;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = offX + c * SPACING;
+        const y = offY + r * SPACING;
+        dots.push({ ox: x, oy: y, x, y, vx: 0, vy: 0 });
+      }
+    }
+  }
 
-<div class="space-y-1">
-<div class="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm"><span class="text-on-surface font-medium"><span data-i18n="crumb_all">All Documents</span></span></div>
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-1">
-<div>
-<h1 class="font-headline-lg text-headline-lg font-semibold text-on-surface tracking-tight"><span data-i18n="page_title">Files &amp; Assets</span></h1>
-<p class="font-body-md text-body-md text-on-surface-variant"><span data-i18n="page_desc">Manage and organize your project files, media, and uploaded assets.</span></p>
-</div>
-<div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+  function dotColor() {
+    const v = getComputedStyle(document.documentElement).getPropertyValue("--c-outline-variant").trim();
+    return v ? `rgb(${v})` : "#888";
+  }
 
-<button class="h-9 px-4 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-semibold hover:bg-on-surface/90 flex items-center gap-2 active:scale-[0.98] transition-all shadow-sm" data-upload>
-<span class="material-symbols-outlined !text-[18px]">add</span>
-<span><span data-i18n="upload_file">Upload File</span></span>
-</button>
-</div>
-</div>
-</div>
+  function frame() {
+    if (!running) return;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = dotColor();
 
-<!-- USAGE CARD -->
-<div class="rounded-lg border border-outline-variant bg-surface-container-low p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-<div class="space-y-2">
-<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface">
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-primary !text-[16px]">database</span>
-              <span data-i18n="usage_db">ฐานข้อมูล (Database)</span>
-            </span>
-<span class="font-code-inline text-code-inline text-on-surface-variant" id="dbText">-</span>
-</div>
-<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
-<div class="bg-primary-container h-full rounded-full transition-all duration-500" id="dbBar" style="width: 0%"></div>
-</div>
-<div class="font-body-sm text-body-sm text-outline" id="dbPct"><span data-i18n="usage_db_desc">ทั้งฐานข้อมูลรวมทุกตาราง</span></div>
-</div>
-<div class="space-y-2">
-<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface">
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-primary !text-[16px]">folder_zip</span>
-              <span data-i18n="usage_st">ไฟล์ที่อัปโหลด (Storage)</span>
-            </span>
-<span class="font-code-inline text-code-inline text-on-surface-variant" id="stText">-</span>
-</div>
-<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
-<div class="bg-primary-container h-full rounded-full transition-all duration-500" id="stBar" style="width: 0%"></div>
-</div>
-<div class="font-body-sm text-body-sm text-outline" id="stPct"><span data-i18n="usage_st_desc">ไฟล์ทั้งหมดใน bucket project-files</span></div>
-</div>
-<div class="md:col-span-2 flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-outline-variant">
-<span class="font-body-sm text-body-sm text-outline"><span data-i18n="usage_quota">Supabase (ฐานข้อมูล 500 MB, Storage 1 GB)</span></span>
-<button class="h-7 px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface font-label-sm text-label-sm flex items-center gap-1.5 transition-colors active:scale-[0.98]" id="usageRefreshBtn">
-<span class="material-symbols-outlined !text-[14px]">refresh</span>
-              <span data-i18n="refresh_usage">รีเฟรชขนาด</span>
-            </button>
-</div>
-</div>
+    const R = ptr.r, R2 = R * R;
+    for (const d of dots) {
+      if (ptr.active && !reduceMotion) {
+        const dx = d.x - ptr.x, dy = d.y - ptr.y;
+        const dist2 = dx * dx + dy * dy;
+        if (dist2 < R2) {
+          const dist = Math.sqrt(dist2) || 0.001;
+          const f = 1 - dist / R;
+          const push = FORCE * f * f;
+          d.vx += (dx / dist) * push;
+          d.vy += (dy / dist) * push;
+        }
+      }
+      // สปริงดึงกลับ + หน่วง
+      d.vx += -K * (d.x - d.ox);
+      d.vy += -K * (d.y - d.oy);
+      d.vx *= DAMP;
+      d.vy *= DAMP;
+      d.x += d.vx;
+      d.y += d.vy;
 
-<!-- TOOLBAR -->
-<div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-surface-container-low p-2 rounded-lg border border-outline-variant">
-<div class="flex flex-wrap items-center gap-2">
-<div class="relative">
-<button class="h-8 px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors active:scale-[0.98]" onclick="showToast('Type filter: coming soon', 'filter_list')">
-<span class="material-symbols-outlined text-outline !text-[16px]">filter_list</span>
-<span><span data-i18n="type_all">All Types</span></span>
-<span class="material-symbols-outlined text-outline !text-[16px]">keyboard_arrow_down</span>
-</button>
-</div>
-<div class="relative flex-1 sm:w-72">
-<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline !text-[16px]">search</span>
-<input class="w-full h-8 pl-8 pr-12 text-label-md font-label-md bg-surface border border-outline-variant rounded-lg text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" id="fileSearch" placeholder="Filter files by name or tag..." data-i18n-ph="filter_ph" type="text"/>
-<div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-<kbd class="px-1.5 py-0.5 text-[10px] font-code-inline text-outline bg-surface-container-high rounded border border-outline-variant">⌘K</kbd>
-</div>
-</div>
-<div class="flex flex-wrap items-center gap-1.5 md:pl-2 md:border-l border-outline-variant" id="groupPills">
-<button type="button" data-act="group" data-val="all" class="h-7 px-2.5 rounded-full text-label-sm font-label-sm transition-colors whitespace-nowrap"><span data-i18n="grp_all">All</span></button>
-<button type="button" data-act="group" data-val="docs" class="h-7 px-2.5 rounded-full text-label-sm font-label-sm transition-colors whitespace-nowrap"><span data-i18n="grp_docs">Documents</span></button>
-<button type="button" data-act="group" data-val="images" class="h-7 px-2.5 rounded-full text-label-sm font-label-sm transition-colors whitespace-nowrap"><span data-i18n="grp_images">Images</span></button>
-<button type="button" data-act="group" data-val="archives" class="h-7 px-2.5 rounded-full text-label-sm font-label-sm transition-colors whitespace-nowrap"><span data-i18n="grp_archives">Archives</span></button>
-</div>
-</div>
-<div class="flex items-center gap-2 justify-end">
-<button class="h-8 px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-colors active:scale-[0.98]" onclick="showToast('Column visibility: coming soon', 'view_column')">
-<span class="material-symbols-outlined text-outline !text-[16px]">view_column</span>
-<span><span data-i18n="columns">Columns</span></span>
-</button>
-<button class="h-8 w-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface flex items-center justify-center transition-colors active:scale-[0.98]" id="refreshBtn" data-i18n-title="refresh_list">
-<span class="material-symbols-outlined !text-[16px]">refresh</span>
-</button>
-</div>
-</div>
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, DOT, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    requestAnimationFrame(frame);
+  }
 
-<!-- EMPTY STATE -->
-<div class="hidden relative w-full rounded-xl border border-dashed border-outline-variant/60 bg-surface-container-lowest/50 p-12 lg:p-16 flex-col items-center justify-center text-center max-w-2xl mx-auto my-4 min-h-[420px] transition-all hover:border-outline/80" id="emptyState">
-<div class="w-16 h-16 rounded-full bg-surface-container-high/70 border border-outline-variant/80 flex items-center justify-center text-on-surface-variant mb-5 shadow-sm">
-<span class="material-symbols-outlined text-primary" style="font-size: 28px;">upload_file</span>
-</div>
-<h2 class="font-headline-md text-headline-md font-semibold tracking-tight text-on-surface"><span data-i18n="empty_title">No files uploaded yet</span></h2>
-<p class="font-body-md text-body-md text-on-surface-variant max-w-md mt-2 mb-6 leading-relaxed">
-            <span data-i18n="empty_desc">Drag and drop your files here or click the button below to upload your first file to this workspace.</span>
-          </p>
-<div class="flex flex-wrap items-center justify-center gap-3">
-<button class="flex items-center gap-2 h-9 px-4 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-white active:scale-[0.98] transition-all shadow-sm" data-upload>
-<span class="material-symbols-outlined !text-[16px]">add</span>
-              <span data-i18n="upload_plus">+ Upload File</span>
-            </button>
-<button class="flex items-center gap-2 h-9 px-4 rounded-lg border border-outline-variant bg-transparent hover:bg-surface-container text-on-surface font-label-md text-label-md active:scale-[0.98] transition-all" onclick="showToast('Import from Cloud: coming soon', 'cloud')">
-<span class="material-symbols-outlined !text-[16px]">cloud</span>
-              <span data-i18n="import_cloud">Import from Cloud</span>
-            </button>
-</div>
-<div class="mt-10 pt-6 border-t border-outline-variant/40 flex flex-col sm:flex-row items-center justify-center gap-3 text-outline font-body-sm text-body-sm text-[11px]">
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined !text-[14px]">description</span>
-              <span data-i18n="formats">Supported formats: PDF, PNG, JPG, SVG, MP4, ZIP (up to 50 MB)</span>
-            </span>
-<span class="hidden sm:inline">•</span>
-<span class="flex items-center gap-1 text-on-surface-variant">
-<span class="material-symbols-outlined !text-[13px]">lock</span>
-              <span data-i18n="storage_secure">End-to-end encrypted storage</span>
-            </span>
-</div>
-</div>
+  function startLoop() {
+    if (running) return;
+    running = true;
+    requestAnimationFrame(frame);
+  }
+  function stopLoop() {
+    running = false;
+  }
 
-<!-- TABLE -->
-<div class="rounded-lg border border-outline-variant bg-surface overflow-hidden shadow-sm" id="tableCard">
-<div class="overflow-x-auto min-w-full">
-<table class="w-full text-left border-collapse">
-<thead>
-<tr class="border-b border-outline-variant bg-surface-container-lowest/60 text-on-surface-variant font-label-md text-label-md">
-<th class="w-12 px-4 py-3 text-center">
-<input class="w-4 h-4 rounded bg-surface border-outline-variant text-primary-container focus:ring-primary-container focus:ring-offset-surface cursor-pointer" id="selectAll" type="checkbox"/>
-</th>
-<th class="px-4 py-3 font-medium">
-<button class="flex items-center gap-1.5 text-on-surface hover:text-primary transition-colors group">
-<span><span data-i18n="col_name">File Name</span></span>
-<span class="material-symbols-outlined !text-[16px] text-outline group-hover:text-primary">unfold_more</span>
-</button>
-</th>
-<th class="px-4 py-3 font-medium">
-<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface transition-colors">
-<span><span data-i18n="col_category">Category</span></span>
-<span class="material-symbols-outlined !text-[14px] text-outline">arrow_drop_down</span>
-</button>
-</th>
-<th class="px-4 py-3 font-medium">
-<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface transition-colors">
-<span><span data-i18n="col_size">Size</span></span>
-<span class="material-symbols-outlined !text-[14px] text-outline">unfold_more</span>
-</button>
-</th>
-<th class="px-4 py-3 font-medium">
-<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface transition-colors">
-<span><span data-i18n="col_date">Uploaded Date</span></span>
-<span class="material-symbols-outlined !text-[14px] text-outline">arrow_drop_down</span>
-</button>
-</th>
-<th class="w-14 px-4 py-3 text-right font-medium">
-<span class="sr-only"><span data-i18n="col_actions">Actions</span></span>
-</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-outline-variant font-body-md text-body-md" id="tableBody"></tbody>
-</table>
-</div>
+  // ตำแหน่งของเมาส์/นิ้วเทียบกับพื้นที่หน้าแรก
+  function setPointer(e) {
+    const r = section.getBoundingClientRect();
+    ptr.x = e.clientX - r.left;
+    ptr.y = e.clientY - r.top;
+    ptr.r = e.pointerType === "touch" ? R_TOUCH : R_MOUSE;
+    ptr.active = true;
+  }
+  function clearPointer() {
+    ptr.active = false;
+  }
 
-<!-- PAGINATION FOOTER -->
-<div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t border-outline-variant bg-surface-container-lowest/60 text-on-surface-variant font-label-sm text-label-sm">
-<div class="text-outline font-medium text-center sm:text-left">
-<span class="text-on-surface font-semibold" id="selCount">0</span> <span data-i18n="sel_of">of</span> <span id="totalCount">0</span> <span data-i18n="sel_suffix">row(s) selected</span>
-            </div>
-<div class="flex flex-wrap items-center gap-4 sm:gap-6 justify-center sm:justify-end">
-<div class="flex items-center gap-2">
-<span class="text-on-surface-variant"><span data-i18n="rows_per_page">Rows per page</span></span>
-<div class="relative">
-<select class="h-8 pl-2 pr-6 text-label-sm font-label-sm bg-surface border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container appearance-none cursor-pointer" id="perPage">
-<option selected="" value="10">10</option>
-<option value="20">20</option>
-<option value="50">50</option>
-<option value="100">100</option>
-</select>
-<span class="material-symbols-outlined absolute right-1.5 top-1/2 -translate-y-1/2 text-outline pointer-events-none !text-[14px]">unfold_more</span>
-</div>
-</div>
-<div class="text-on-surface font-medium" id="pageInfo">Page 1 of 1</div>
-<div class="flex items-center gap-1">
-<button class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-outline hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]" id="firstPage" title="First page">
-<span class="material-symbols-outlined !text-[16px]">first_page</span>
-</button>
-<button class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-outline hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]" id="prevPage" title="Previous page">
-<span class="material-symbols-outlined !text-[16px]">chevron_left</span>
-</button>
-<button class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface-variant hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]" id="nextPage" title="Next page">
-<span class="material-symbols-outlined !text-[16px]">chevron_right</span>
-</button>
-<button class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface-variant hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]" id="lastPage" title="Last page">
-<span class="material-symbols-outlined !text-[16px]">last_page</span>
-</button>
-</div>
-</div>
-</div>
-</div>
+  section.addEventListener("pointerdown", setPointer);
+  section.addEventListener("pointermove", setPointer);
+  section.addEventListener("pointerup", clearPointer);
+  section.addEventListener("pointercancel", clearPointer);
+  section.addEventListener("pointerleave", clearPointer);
 
-</div>
-</section>
-</main>
-</div>
+  // สร้างตารางใหม่เมื่อขนาดเปลี่ยน (รวมถึงตอนหน้าแรกถูกแสดงครั้งแรก)
+  new ResizeObserver(() => {
+    build();
+  }).observe(section);
 
-<!-- Toast -->
-<div class="fixed bottom-6 right-6 hidden items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-container-high text-on-surface border border-outline-variant shadow-xl text-body-sm z-50" id="toast">
-<span class="material-symbols-outlined !text-[18px] text-tertiary-fixed-dim" id="toastIcon">check_circle</span>
-<span id="toastMsg"></span>
-</div>
+  // หยุดการคำนวณเมื่อหน้าแรกไม่ได้แสดงอยู่
+  new IntersectionObserver((entries) => {
+    visible = entries[0].isIntersecting;
+    visible ? startLoop() : stopLoop();
+  }).observe(section);
 
-<script type="module" src="app.js"></script>
-</body></html>
+  build();
+})();
