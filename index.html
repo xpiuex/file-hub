@@ -19,20 +19,21 @@
 
 <!-- LOGIN SCREEN -->
 <div id="loginScreen" class="hidden fixed inset-0 z-[100] bg-surface items-center justify-center p-4">
-<form id="loginForm" class="w-full max-w-sm bg-surface-container-low border border-outline-variant rounded-xl p-6 space-y-3">
-<h2 class="font-headline-md text-headline-md text-on-surface"><span data-i18n="login">เข้าสู่ระบบ</span></h2>
-<input id="loginEmail" type="email" required placeholder="อีเมล" data-i18n-ph="login_email" class="w-full h-9 px-3 rounded-lg bg-surface border border-outline-variant text-on-surface text-body-sm focus:outline-none focus:border-primary-container"/>
-<input id="loginPassword" type="password" required placeholder="รหัสผ่าน" data-i18n-ph="login_password" class="w-full h-9 px-3 rounded-lg bg-surface border border-outline-variant text-on-surface text-body-sm focus:outline-none focus:border-primary-container"/>
-<button type="submit" class="w-full h-9 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-on-surface/90"><span data-i18n="login">เข้าสู่ระบบ</span></button>
-  <button type="button" id="loginCancel" class="w-full h-9 rounded-lg border border-outline-variant text-on-surface font-label-md text-label-md hover:bg-surface-container"><span data-i18n="login_cancel">ยกเลิก</span></button>
+<div class="w-full max-w-sm bg-surface-container-low border border-outline-variant rounded-xl p-6 space-y-3">
+<h2 class="font-headline-md text-headline-md text-on-surface" data-i18n="login">เข้าสู่ระบบ</h2>
+<button type="button" id="googleLoginBtn" class="w-full h-9 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-on-surface/90 flex items-center justify-center gap-2"><span class="material-symbols-outlined !text-[16px]">account_circle</span><span data-i18n="google_login">เข้าสู่ระบบด้วย Google</span></button>
+<button type="button" id="loginCancel" class="w-full h-9 rounded-lg border border-outline-variant text-on-surface font-label-md text-label-md hover:bg-surface-container" data-i18n="login_cancel">ยกเลิก</button>
 <p id="loginMsg" class="text-body-sm text-error min-h-[1rem]"></p>
-</form>
+</div>
 </div>
 
 <!-- TOP NAV BAR -->
 <header class="flex flex-wrap justify-between items-center gap-2 min-h-[3.5rem] py-2 px-3 md:px-6 w-full border-b border-outline-variant bg-surface shrink-0 z-30">
+<button type="button" id="menuBtn" data-i18n-title="menu_open" class="md:hidden p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
 <div class="flex items-center gap-6">
-<nav class="flex items-center gap-4 overflow-x-auto whitespace-nowrap min-w-0 md:ml-2">
+<nav id="headerNav" class="flex items-center gap-4 overflow-x-auto whitespace-nowrap min-w-0 md:ml-2">
 <a class="text-on-surface font-label-md text-label-md border-b-2 border-primary-container pb-1 transition-colors" href="#" data-view="files"><span data-i18n="nav_files">Files</span></a>
 <a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="shared"><span data-i18n="nav_shared">Shared</span></a>
 <a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="recent"><span data-i18n="nav_recent">Recent</span></a>
@@ -60,7 +61,14 @@
 <div class="flex-1 flex md:overflow-hidden">
 
 <!-- MAIN VIEW CANVAS -->
+<div id="sidebarBackdrop" class="hidden fixed inset-0 bg-black/50 z-50 md:hidden"></div>
+<aside id="sidebar" class="w-56 shrink-0 flex-col gap-1 p-3 border-r border-outline-variant bg-surface-container-lowest">
+<a href="#" class="sidebar-link flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-colors" data-route="home"><span class="material-symbols-outlined !text-[18px]">home</span><span data-i18n="sidebar_home">หน้าแรก</span></a>
+<a href="#room-work" class="sidebar-link flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-colors" data-route="workspace"><span class="material-symbols-outlined !text-[18px]">folder</span><span>room-work</span></a>
+</aside>
 <main class="flex-1 flex flex-col min-w-0 bg-background md:overflow-y-auto">
+<section id="viewHome"></section>
+<section id="viewWorkspace" class="hidden">
 <div class="max-w-[1400px] w-full mx-auto p-4 md:p-6 lg:p-8 space-y-6">
 
 <div class="space-y-1">
@@ -131,6 +139,7 @@
 <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline !text-[16px]">search</span>
 <input class="w-full h-8 pl-8 pr-12 text-label-md font-label-md bg-surface border border-outline-variant rounded-lg text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" id="fileSearch" placeholder="Filter files by name or tag..." data-i18n-ph="filter_ph" type="text"/>
 <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+<kbd class="px-1.5 py-0.5 text-[10px] font-code-inline text-outline bg-surface-container-high rounded border border-outline-variant">⌘K</kbd>
 </div>
 </div>
 <div class="flex flex-wrap items-center gap-1.5 md:pl-2 md:border-l border-outline-variant" id="groupPills">
@@ -263,6 +272,7 @@
 </div>
 
 </div>
+</section>
 </main>
 </div>
 
