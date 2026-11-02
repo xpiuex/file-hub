@@ -15,6 +15,18 @@ const FIREBASE_CONFIG = {
   appId: "1:1002777913125:web:9e32ce19faa76e3bf21ccc",
 };
 
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCLhvHij49dsfmmdKFOB4tYMxC1F4r7oxs",
+  authDomain: "fen-board.firebaseapp.com",
+  databaseURL: "https://fen-board-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "fen-board",
+  storageBucket: "fen-board.firebasestorage.app",
+  messagingSenderId: "1002777913125",
+  appId: "1:1002777913125:web:9e32ce19faa76e3bf21ccc",
+  measurementId: "G-EMY1BC93LD"
+};
+
 const BUCKET = "project-files";
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const DEFAULT_PROJECT_NAME = "ไฟล์ทั่วไป";
