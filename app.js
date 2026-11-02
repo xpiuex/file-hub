@@ -14,7 +14,6 @@ const FIREBASE_CONFIG = {
   projectId: "fen-board",
   appId: "1:1002777913125:web:9e32ce19faa76e3bf21ccc",
 };
-/* ================== */
 
 const BUCKET = "project-files";
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
