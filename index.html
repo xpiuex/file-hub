@@ -47,7 +47,7 @@
 <span class="material-symbols-outlined">dark_mode</span>
 </button>
 <div class="h-4 w-[1px] bg-outline-variant mx-1"></div>
-<button class="h-8 px-3 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-on-surface/90 active:scale-[0.98] transition-all hidden md:flex items-center gap-1.5 shadow-sm" data-upload>
+<button class="h-8 px-3 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-on-surface/90 active:scale-[0.98] transition-all hidden md:flex items-center gap-1.5 shadow-sm" id="headerUpload" data-upload>
 <span class="material-symbols-outlined !text-[16px]">add</span>
 <span><span data-i18n="upload_file">Upload File</span></span>
 </button>
@@ -64,11 +64,17 @@
 <!-- MAIN VIEW CANVAS -->
 <div id="sidebarBackdrop" class="hidden fixed inset-0 bg-black/50 z-50 md:hidden"></div>
 <aside id="sidebar" class="w-56 shrink-0 flex-col gap-1 p-3 border-r border-outline-variant bg-surface-container-lowest">
+<div id="sidebarBrand" class="px-3 pt-1 pb-3 font-headline-sm text-headline-sm font-semibold text-on-surface tracking-tight">AskFile</div>
 <a href="#" class="sidebar-link flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-colors" data-route="home"><span class="material-symbols-outlined !text-[18px]">home</span><span data-i18n="sidebar_home">หน้าแรก</span></a>
 <a href="#room-work" class="sidebar-link flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-colors" data-route="workspace"><span class="material-symbols-outlined !text-[18px]">folder</span><span>room-work</span></a>
 </aside>
 <main class="flex-1 flex flex-col min-w-0 bg-background md:overflow-y-auto">
-<section id="viewHome"></section>
+<section id="viewHome">
+<div class="relative z-10 min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center text-center px-6 py-16">
+<h1 class="font-headline-lg text-headline-lg font-semibold text-on-surface tracking-tight" data-i18n="home_title">ยินดีต้อนรับสู่ AskFile</h1>
+<p class="mt-3 max-w-md font-body-md text-body-md text-on-surface-variant" data-i18n="home_desc">พื้นที่จัดเก็บและแชร์ไฟล์งานของทีม เลือก room-work จากเมนูเพื่อเริ่มใช้งาน</p>
+</div>
+</section>
 <section id="viewWorkspace" class="hidden">
 <div class="max-w-[1400px] w-full mx-auto p-4 md:p-6 lg:p-8 space-y-6">
 <div id="siteName" class="text-right font-headline-sm text-headline-sm font-semibold text-on-surface tracking-tight">AskFile</div>
