@@ -47,15 +47,21 @@
     }
   }
 
-  function dotColor() {
-    const v = getComputedStyle(document.documentElement).getPropertyValue("--c-outline-variant").trim();
-    return v ? `rgb(${v})` : "#888";
+  // สีจุดไล่จาก primary ไป tertiary ตามตำแหน่ง ให้หน้าแรกมีสีสัน
+  function palette() {
+    const cs = getComputedStyle(document.documentElement);
+    const a = (cs.getPropertyValue("--c-primary").trim() || "180 197 255").split(/\s+/).map(Number);
+    const b = (cs.getPropertyValue("--c-tertiary").trim() || "255 181 150").split(/\s+/).map(Number);
+    return { a, b };
+  }
+  function mix(p, q, t) {
+    return `rgb(${Math.round(p[0] + (q[0] - p[0]) * t)} ${Math.round(p[1] + (q[1] - p[1]) * t)} ${Math.round(p[2] + (q[2] - p[2]) * t)} / 0.85)`;
   }
 
   function frame() {
     if (!running) return;
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = dotColor();
+    const pal = palette();
 
     const R = ptr.r, R2 = R * R;
     for (const d of dots) {
@@ -78,6 +84,7 @@
       d.x += d.vx;
       d.y += d.vy;
 
+      ctx.fillStyle = mix(pal.a, pal.b, Math.min(1, Math.max(0, (d.ox / (w || 1) + d.oy / (h || 1)) / 2)));
       ctx.beginPath();
       ctx.arc(d.x, d.y, DOT, 0, Math.PI * 2);
       ctx.fill();
