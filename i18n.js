@@ -3,6 +3,7 @@
   var DICT = {
     th: {
       app_title: "DataGrid - ไฟล์และทรัพยากร",
+      home_title: "ยินดีต้อนรับสู่ AskFile", home_desc: "พื้นที่จัดเก็บและแชร์ไฟล์งานของทีม เลือก room-work จากเมนูเพื่อเริ่มใช้งาน",
       sidebar_home: "หน้าแรก", google_login: "เข้าสู่ระบบด้วย Google", or_divider: "หรือ", menu_open: "เปิดเมนู",
       no_access: "บัญชีนี้ไม่มีสิทธิ์เข้าใช้งาน (ต้องอยู่ในรายการที่อนุญาต)", need_login_enter: "เข้าสู่ระบบด้วย Google เพื่อเปิด room-work",
       dup_content: "ไฟล์เนื้อหาเดียวกันนี้มีอยู่แล้ว: {name}", dup_db: "ไฟล์นี้ซ้ำกับที่มีอยู่แล้ว",
@@ -51,6 +52,7 @@
     },
     en: {
       app_title: "DataGrid - Files & Assets",
+      home_title: "Welcome to AskFile", home_desc: "Store and share your team's files. Choose room-work from the menu to get started.",
       sidebar_home: "Home", google_login: "Sign in with Google", or_divider: "or", menu_open: "Open menu",
       no_access: "This account is not authorized to use the workspace", need_login_enter: "Sign in with Google to open room-work",
       dup_content: "An identical file already exists: {name}", dup_db: "This file duplicates an existing one",
