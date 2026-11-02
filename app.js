@@ -14,8 +14,7 @@ const FIREBASE_CONFIG = {
   projectId: "fen-board",
   appId: "1:1002777913125:web:9e32ce19faa76e3bf21ccc",
 };
-// For Firebase JS SDK v7.20.0 and later, measurementId is optiofireba
-/*================= */
+/* ================== */
 
 const BUCKET = "project-files";
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
@@ -487,5 +486,549 @@ function applyColumns() {
       if (key) cell.style.display = cols[key] ? "" : "none";
     });
   });
-                                                         }
-      
+}
+
+function render() {
+  shown = computeShown();
+
+  const showEmpty = view === "files" && files.filter((f) => !f.deleted_at).length === 0;
+  const es = document.getElementById("emptyState");
+  es.classList.toggle("hidden", !showEmpty);
+  es.classList.toggle("flex", showEmpty);
+  document.getElementById("tableCard").classList.toggle("hidden", showEmpty);
+
+  const pages = Math.max(1, Math.ceil(shown.length / perPage));
+  page = Math.min(page, pages);
+  const slice = shown.slice((page - 1) * perPage, page * perPage);
+
+  document.getElementById("tableBody").innerHTML = slice.length
+    ? slice.map(rowHtml).join("")
+    : `<tr><td colspan="6" class="px-4 py-10 text-center text-outline font-body-sm">${emptyMessage()}</td></tr>`;
+
+  document.getElementById("pageInfo").textContent = t("page_of", { p: page, n: pages });
+  document.getElementById("firstPage").disabled = page <= 1;
+  document.getElementById("prevPage").disabled = page <= 1;
+  document.getElementById("nextPage").disabled = page >= pages;
+  document.getElementById("lastPage").disabled = page >= pages;
+  document.getElementById("totalCount").textContent = shown.length;
+  document.getElementById("selCount").textContent = selected.size;
+
+  applyColumns();
+  updateSelectAll();
+}
+
+function updateSelectAll() {
+  const boxes = [...document.querySelectorAll("#tableBody .row-checkbox")];
+  const checked = boxes.filter((b) => b.checked).length;
+  const master = document.getElementById("selectAll");
+  master.checked = boxes.length > 0 && checked === boxes.length;
+  master.indeterminate = checked > 0 && checked < boxes.length;
+}
+
+/* ---------- เปลี่ยนมุมมอง (Files / Shared / Recent / Trash) ---------- */
+function setView(v) {
+  view = v;
+  page = 1;
+  selected.clear();
+  document.querySelectorAll("header nav a").forEach((a) => {
+    a.className = a.dataset.view === v ? NAV_ACTIVE : NAV_INACTIVE;
+  });
+  render();
+}
+
+/* ---------- Checkbox ---------- */
+document.getElementById("tableBody").addEventListener("change", (e) => {
+  if (!e.target.classList.contains("row-checkbox")) return;
+  const id = e.target.dataset.id;
+  e.target.checked ? selected.add(id) : selected.delete(id);
+  document.getElementById("selCount").textContent = selected.size;
+  updateSelectAll();
+});
+
+document.getElementById("selectAll").addEventListener("change", (e) => {
+  document.querySelectorAll("#tableBody .row-checkbox").forEach((cb) => {
+    cb.checked = e.target.checked;
+    e.target.checked ? selected.add(cb.dataset.id) : selected.delete(cb.dataset.id);
+  });
+  document.getElementById("selCount").textContent = selected.size;
+});
+
+/* ---------- คลิกทุกปุ่มที่มี data-act (จุดเดียว) ---------- */
+document.addEventListener("click", async (e) => {
+  const el = e.target.closest("[data-act]");
+  if (!el) {
+    if (!e.target.closest("#floatingMenu")) closePop();
+    return;
+  }
+
+  const act = el.dataset.act;
+  const f = files.find((x) => x.id === el.dataset.id);
+
+  switch (act) {
+    case "menu":
+      if (f) openPopover(el, rowMenuHtml(f), "row-" + f.id, "w-44");
+      return;
+    case "open-type":
+      return openPopover(el, typeMenuHtml(), "type", "w-44");
+    case "open-cols":
+      return openPopover(el, colsMenuHtml(), "cols", "w-52");
+    case "open-notify":
+      return openPopover(el, notifyHtml(), "notify", "w-80");
+    case "type":
+      typeFilter = el.dataset.val;
+      groupFilter = "all";
+      closePop();
+      syncTypeLabel();
+      syncGroupPills();
+      page = 1;
+      render();
+      return;
+    case "group":
+      groupFilter = el.dataset.val;
+      typeFilter = "all";
+      syncTypeLabel();
+      syncGroupPills();
+      page = 1;
+      render();
+      return;
+    case "col":
+      cols[el.dataset.val] = !cols[el.dataset.val];
+      if (openPop) openPop.innerHTML = colsMenuHtml();
+      applyColumns();
+      return;
+    case "import-url":
+      closePop();
+      return importFromUrl();
+  }
+
+  closePop();
+  if (!f) return;
+  if (act === "download") return downloadFile(f);
+  if (act === "share") return shareFile(f);
+  if (act === "rename") return requireAdmin(() => renameFile(f));
+  if (act === "delete") return requireAdmin(() => trashFile(f));
+  if (act === "restore") return requireAdmin(() => restoreFile(f));
+  if (act === "purge") return requireAdmin(() => purgeFile(f));
+});
+
+/* ---------- แถบความคืบหน้า ---------- */
+function ensureTransferPanel() {
+  let panel = document.getElementById("transferPanel");
+  if (!panel) {
+    panel = document.createElement("div");
+    panel.id = "transferPanel";
+    panel.className = "fixed bottom-6 left-6 w-80 max-w-[calc(100vw-3rem)] flex flex-col gap-2 z-50";
+    document.body.appendChild(panel);
+  }
+  return panel;
+}
+
+function addTransfer(name) {
+  const el = document.createElement("div");
+  el.className = "rounded-lg bg-surface-container-high border border-outline-variant shadow-xl p-3 space-y-2";
+  el.innerHTML = `
+    <div class="flex items-center justify-between gap-2">
+      <span class="font-label-md text-label-md text-on-surface truncate" data-name></span>
+      <span class="font-code-inline text-code-inline text-on-surface-variant shrink-0" data-pct>0%</span>
+    </div>
+    <div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+      <div class="bg-primary-container h-full rounded-full transition-all duration-150" data-bar style="width: 0%"></div>
+    </div>
+    <div class="flex items-center justify-between font-body-sm text-body-sm text-outline gap-2">
+      <span data-size>${t("start_dl")}</span>
+      <span data-status>${t("in_progress")}</span>
+    </div>`;
+  el.querySelector("[data-name]").textContent = name;
+  ensureTransferPanel().appendChild(el);
+  return { el };
+}
+
+function updateTransfer(t, received, total) {
+  const bar = t.el.querySelector("[data-bar]");
+  if (total > 0) {
+    const pct = Math.min(100, (received / total) * 100);
+    bar.style.width = pct + "%";
+    t.el.querySelector("[data-pct]").textContent = pct.toFixed(0) + "%";
+    t.el.querySelector("[data-size]").textContent = `${fmtSize(received)} / ${fmtSize(total)}`;
+  } else {
+    bar.style.width = "100%";
+    bar.classList.add("animate-pulse");
+    t.el.querySelector("[data-pct]").textContent = "—";
+    t.el.querySelector("[data-size]").textContent = fmtSize(received);
+  }
+}
+
+function finishTransfer(t, ok, msg = "") {
+  const bar = t.el.querySelector("[data-bar]");
+  bar.classList.remove("animate-pulse");
+  if (ok) {
+    bar.style.width = "100%";
+    t.el.querySelector("[data-pct]").textContent = "100%";
+    t.el.querySelector("[data-status]").textContent = t("done");
+    setTimeout(() => t.el.remove(), 4000);
+  } else {
+    bar.classList.replace("bg-primary-container", "bg-error");
+    const st = t.el.querySelector("[data-status]");
+    st.textContent = t("failed") + (msg ? ": " + msg : "");
+    st.classList.add("text-error");
+    setTimeout(() => t.el.remove(), 8000);
+  }
+}
+
+// อ่านข้อมูลทีละส่วนพร้อมอัปเดตความคืบหน้า
+async function readWithProgress(res, t, fallbackTotal) {
+  const total = Number(res.headers.get("content-length")) || fallbackTotal || 0;
+  if (!res.body) {
+    const b = await res.blob();
+    updateTransfer(t, b.size, b.size);
+    return b;
+  }
+  const reader = res.body.getReader();
+  const chunks = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    updateTransfer(t, received, total);
+  }
+  return new Blob(chunks, { type: res.headers.get("content-type") || "application/octet-stream" });
+}
+
+function saveBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+/* ---------- ดาวน์โหลด (มีเปอร์เซ็นต์) ---------- */
+async function downloadFile(f) {
+  const { data, error } = await sb.storage.from(BUCKET)
+    .createSignedUrl(f.storage_path, DOWNLOAD_LINK_SECONDS);
+  if (error) return showToast(error.message, "error");
+
+  const t = addTransfer(f.file_name);
+  try {
+    const res = await fetch(data.signedUrl);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const blob = await readWithProgress(res, t, Number(f.file_size) || 0);
+    saveBlob(blob, f.file_name);
+    finishTransfer(t, true);
+    logActivity(t("act_download", { name: f.file_name }));
+  } catch (err) {
+    // ถ้าอ่านแบบมีความคืบหน้าไม่ได้ (เช่น CORS) ให้เปิดลิงก์ตรงแทน
+    finishTransfer(t, false, err.message);
+    window.open(data.signedUrl, "_blank");
+  }
+}
+
+/* ---------- นำเข้าจาก URL ---------- */
+async function importFromUrl() {
+  const input = prompt(t("url_prompt"));
+  if (!input) return;
+
+  let u;
+  try { u = new URL(input.trim()); } catch { return showToast(t("url_invalid"), "error"); }
+  if (u.protocol !== "https:") return showToast(t("https_only"), "error");
+
+  let name = "imported-file";
+  try { name = decodeURIComponent(u.pathname.split("/").pop() || "") || name; } catch {}
+
+  const t = addTransfer(name);
+  try {
+    const res = await fetch(u.href);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const blob = await readWithProgress(res, t, 0);
+    finishTransfer(t, true);
+    await uploadFileObject(new File([blob], name, { type: blob.type }));
+  } catch (err) {
+    finishTransfer(t, false, err.message);
+  }
+}
+
+/* ---------- แชร์ลิงก์ (ใช้ได้ 1 ชั่วโมง) ---------- */
+async function shareFile(f) {
+  const { data, error } = await sb.storage.from(BUCKET)
+    .createSignedUrl(f.storage_path, SHARE_LINK_SECONDS);
+  if (error) return showToast(error.message, "error");
+
+  const expires = new Date(Date.now() + SHARE_LINK_SECONDS * 1000).toISOString();
+  const { error: shErr } = await sb.from("share_links").insert({ file_id: f.id, expires_at: expires });
+  if (shErr) console.warn("Saving share record failed:", shErr.message);
+
+  try {
+    await navigator.clipboard.writeText(data.signedUrl);
+    showToast(t("link_copied"), "link");
+  } catch {
+    prompt(t("copy_link_prompt"), data.signedUrl);
+  }
+  logActivity(t("act_share", { name: f.file_name }));
+  loadAll();
+}
+
+/* ---------- เปลี่ยนชื่อ (ต้องมีสิทธิ์) ---------- */
+async function renameFile(f) {
+  const newName = prompt(t("new_name_prompt"), f.file_name);
+  if (!newName || !newName.trim() || newName.trim() === f.file_name) return;
+
+  const { data, error } = await sb.from("files")
+    .update({ file_name: newName.trim() })
+    .eq("id", f.id)
+    .select("id");
+  if (error) return showToast(error.code === "23505" ? t("name_taken") : error.message, "error");
+  if (!data || data.length === 0) return showToast(t("no_perm_rename"), "error");
+
+  logActivity(t("act_rename", { name: newName.trim() }));
+  showToast(t("renamed"));
+  loadAll();
+}
+
+/* ---------- ย้ายไปถังขยะ / กู้คืน / ลบถาวร (ต้องมีสิทธิ์) ---------- */
+async function trashFile(f) {
+  if (!confirm(t("confirm_trash"))) return;
+  // ใช้ฟังก์ชันฝั่งฐานข้อมูลแทนการ UPDATE ตรง เพื่อไม่ให้ RLS ทำให้คำสั่งเงียบ ๆ ไม่แก้แถวใด
+  const { data, error } = await sb.rpc("set_trashed", { p_id: f.id, p_trash: true });
+  if (error) return showToast(error.message, "error");
+  if (!data) return showToast(t("no_perm_trash"), "error");
+  logActivity(t("act_trash", { name: f.file_name }));
+  showToast(t("moved_trash"));
+  loadAll();
+}
+
+async function restoreFile(f) {
+  const { data, error } = await sb.rpc("set_trashed", { p_id: f.id, p_trash: false });
+  if (error) return showToast(error.code === "23505" ? t("name_taken") : error.message, "error");
+  if (!data) return showToast(t("no_perm_restore"), "error");
+  logActivity(t("act_restore", { name: f.file_name }));
+  showToast(t("restored"));
+  loadAll();
+}
+
+async function purgeFile(f) {
+  if (!confirm(t("confirm_purge"))) return;
+  const { data, error } = await sb.from("files").delete().eq("id", f.id).select("id");
+  if (error) return showToast(error.message, "error");
+  if (!data || data.length === 0) return showToast(t("no_perm_delete"), "error");
+
+  await sb.storage.from(BUCKET).remove([f.storage_path]);
+  logActivity(t("act_purge", { name: f.file_name }));
+  showToast(t("purged"));
+  loadAll();
+}
+
+/* ---------- อัปโหลด (ไม่ต้องล็อกอิน) ---------- */
+async function getDefaultProjectId() {
+  if (projects.length) return projects[0].id;
+
+  const { data: found, error: findErr } = await sb.from("projects")
+    .select("*").eq("name", DEFAULT_PROJECT_NAME).limit(1).maybeSingle();
+  if (findErr) throw new Error(findErr.message);
+  if (found) {
+    projects.unshift(found);
+    return found.id;
+  }
+
+  const { data: created, error } = await sb.from("projects")
+    .insert({ name: DEFAULT_PROJECT_NAME, category: "General" })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  projects.unshift(created);
+  return created.id;
+}
+
+/* ---------- ป้องกันไฟล์ซ้ำ ---------- */
+// คำนวณ SHA-256 ของเนื้อหาไฟล์ (ต้องเปิดผ่าน https หรือ localhost)
+async function sha256Hex(file) {
+  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// ถ้าชื่อซ้ำในโปรเจกต์ (ไม่สนตัวพิมพ์เล็ก-ใหญ่) เติม (2), (3) ต่อท้ายชื่อ
+function uniqueName(name, projectId) {
+  const taken = new Set(
+    files.filter((f) => !f.deleted_at && f.project_id === projectId).map((f) => f.file_name.toLowerCase())
+  );
+  if (!taken.has(name.toLowerCase())) return name;
+  const dot = name.lastIndexOf(".");
+  const base = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot) : "";
+  for (let i = 2; i < 10000; i++) {
+    const candidate = `${base} (${i})${ext}`;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+  return name;
+}
+
+async function uploadFileObject(file) {
+  if (file.size > MAX_FILE_SIZE) return showToast(t("file_too_big"), "error");
+
+  let projectId;
+  try {
+    projectId = await getDefaultProjectId();
+  } catch (err) {
+    return showToast(t("prep_failed", { msg: err.message }), "error");
+  }
+
+  showToast(t("uploading"), "cloud_upload");
+
+  // 1) เนื้อหาซ้ำกับไฟล์ที่มีอยู่ (ที่ยังไม่อยู่ในถังขยะ) จะไม่อัปโหลด
+  let hash = null;
+  try {
+    hash = await sha256Hex(file);
+  } catch (err) {
+    console.warn("คำนวณ hash ไม่สำเร็จ (ต้องเปิดผ่าน https):", err.message);
+  }
+  if (hash) {
+    const { data: dup, error: dupErr } = await sb.from("files")
+      .select("file_name").eq("content_hash", hash).is("deleted_at", null).limit(1);
+    if (!dupErr && dup && dup.length) return showToast(t("dup_content", { name: dup[0].file_name }), "warning");
+  }
+
+  // 2) ชื่อซ้ำ -> บันทึกด้วยชื่อใหม่ที่ไม่ซ้ำ
+  const finalName = uniqueName(file.name, projectId);
+
+  const dot = file.name.lastIndexOf(".");
+  const ext = dot > 0 ? file.name.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+  const storagePath = `${projectId}/${crypto.randomUUID()}${ext ? "." + ext : ""}`;
+
+  const { error: upErr } = await sb.storage.from(BUCKET).upload(storagePath, file, {
+    contentType: file.type || "application/octet-stream",
+  });
+  if (upErr) return showToast(upErr.message, "error");
+
+  const { error } = await sb.from("files").insert({
+    project_id: projectId,
+    file_name: finalName,
+    file_type: file.type || null,
+    file_size: file.size,
+    storage_path: storagePath,
+    content_hash: hash,
+    url: "",
+  });
+  if (error) {
+    await sb.storage.from(BUCKET).remove([storagePath]);
+    // 23505 = ละเมิด unique index ที่ฐานข้อมูล (กันกรณีอัปโหลดพร้อมกัน)
+    return showToast(error.code === "23505" ? t("dup_db") : error.message, "error");
+  }
+  logActivity(t("act_upload", { name: finalName }));
+  showToast(finalName !== file.name ? t("renamed_auto", { name: finalName }) : t("upload_ok"));
+  loadAll();
+}
+
+document.querySelectorAll("[data-upload]").forEach((btn) => {
+  btn.addEventListener("click", () => document.getElementById("fileInputHidden").click());
+});
+
+document.getElementById("fileInputHidden").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (file) uploadFileObject(file);
+});
+
+/* ---------- ค้นหา / แบ่งหน้า / อื่น ๆ ---------- */
+document.getElementById("fileSearch").addEventListener("input", (e) => {
+  searchQ = e.target.value.trim();
+  page = 1;
+  render();
+});
+
+document.getElementById("perPage").addEventListener("change", (e) => {
+  perPage = Number(e.target.value);
+  page = 1;
+  render();
+});
+document.getElementById("firstPage").addEventListener("click", () => { page = 1; render(); });
+document.getElementById("prevPage").addEventListener("click", () => { page--; render(); });
+document.getElementById("nextPage").addEventListener("click", () => { page++; render(); });
+document.getElementById("lastPage").addEventListener("click", () => {
+  page = Math.max(1, Math.ceil(shown.length / perPage));
+  render();
+});
+
+document.getElementById("refreshBtn").addEventListener("click", loadAll);
+
+function applyTheme(name) {
+  window.__setTheme(name);
+  const btn = document.getElementById("themeToggleBtn");
+  btn.querySelector(".material-symbols-outlined").textContent = name === "dark" ? "light_mode" : "dark_mode";
+  btn.title = name === "dark" ? t("theme_to_light") : t("theme_to_dark");
+}
+
+document.getElementById("themeToggleBtn").addEventListener("click", () => {
+  applyTheme(localStorage.getItem("theme") === "light" ? "dark" : "light");
+});
+
+window.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+    e.preventDefault();
+    document.getElementById("fileSearch")?.focus();
+  }
+});
+
+/* ---------- เริ่มต้น: ถอด onclick เดโมของปุ่มและผูกฟังก์ชันจริง ---------- */
+function init() {
+  const byKey = (key) => {
+    const el = document.querySelector('[data-i18n="' + key + '"]');
+    return el ? el.closest("button") : null;
+  };
+  const setAct = (el, act) => {
+    if (!el) return;
+    el.removeAttribute("onclick");
+    el.dataset.act = act;
+  };
+
+  typeBtn = byKey("type_all");
+  setAct(typeBtn, "open-type");
+  setAct(byKey("columns"), "open-cols");
+  setAct(document.querySelector('button[title="View columns"]'), "open-cols");
+  setAct(document.querySelector('button[title="Notifications"]'), "open-notify");
+  setAct(byKey("import_cloud"), "import-url");
+
+  // ทำให้เมนูด้านบนแสดงบนมือถือด้วย (เลื่อนแนวนอนได้)
+  const nav = document.querySelector("header nav");
+  if (nav) nav.className = "flex items-center gap-4 ml-2 overflow-x-auto whitespace-nowrap";
+  document.querySelectorAll("header nav a").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      const v = a.dataset.view;
+      if (v) setView(v);
+    });
+  });
+
+  syncTypeLabel();
+  syncGroupPills();
+  updateLangLabel();
+  setView("files");
+  applyTheme(localStorage.getItem("theme") === "light" ? "light" : "dark");
+  routeFromHash();
+}
+
+function updateLangLabel() {
+  const el = document.getElementById("langLabel");
+  if (el) el.textContent = window.getLang() === "th" ? "EN" : "ไทย";
+}
+
+window.addEventListener("langchange", () => {
+  updateLangLabel();
+  applyTheme(localStorage.getItem("theme") === "light" ? "light" : "dark");
+  syncTypeLabel();
+  syncGroupPills();
+  refreshPermission();
+  if (!viewWorkspace.classList.contains("hidden")) {
+    render();
+    loadUsage();
+  }
+});
+
+document.getElementById("langToggleBtn").addEventListener("click", () => {
+  window.setLang(window.getLang() === "th" ? "en" : "th");
+});
+
+init();
