@@ -1,4 +1,4 @@
-.material-symbols-outlined {
+    .material-symbols-outlined {
       font-size: 18px;
       line-height: 1;
       display: inline-block;
@@ -239,4 +239,14 @@ main,
 #viewHome,
 #viewWorkspace {
   background-color: transparent !important;
+}
+
+/* ---------- การ์ดกระจก (โปรไฟล์) ---------- */
+.glass-card {
+  border-radius: 1rem;
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.04));
+  border: 1px solid rgb(255 255 255 / 0.22);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.2);
 }
