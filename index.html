@@ -39,7 +39,7 @@
 <a href="#room-work" class="sidebar-link font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-1" data-route="workspace"><span>room-work</span></a>
 </nav>
 </div>
-<nav id="headerNav" class="flex items-center gap-4 overflow-x-auto whitespace-nowrap min-w-0 md:ml-2">
+<nav id="headerNav" class="hidden flex items-center gap-4 overflow-x-auto whitespace-nowrap min-w-0 md:ml-2">
 <a class="text-on-surface font-label-md text-label-md border-b-2 border-primary-container pb-1 transition-colors" href="#" data-view="files"><span data-i18n="nav_files">Files</span></a>
 <a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="shared"><span data-i18n="nav_shared">Shared</span></a>
 <a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="recent"><span data-i18n="nav_recent">Recent</span></a>
@@ -51,7 +51,7 @@
 <span class="material-symbols-outlined">dark_mode</span>
 </button>
 <div class="h-4 w-[1px] bg-outline-variant mx-1"></div>
-<button class="h-8 px-3 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-on-surface/90 active:scale-[0.98] transition-all hidden md:flex items-center gap-1.5 shadow-sm" id="headerUpload" data-upload>
+<button class="h-8 px-3 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-on-surface/90 active:scale-[0.98] transition-all hidden md:flex items-center gap-1.5 shadow-sm" id="headerUpload" style="display:none" data-upload>
 <span class="material-symbols-outlined !text-[16px]">add</span>
 <span><span data-i18n="upload_file">Upload File</span></span>
 </button>
@@ -81,7 +81,7 @@
 <a href="#" class="sidebar-link glass-btn" data-route="home"><span class="material-symbols-outlined !text-[18px]">home</span><span data-i18n="sidebar_home">หน้าแรก</span></a>
 <a href="#room-work" class="sidebar-link glass-btn" data-route="workspace"><span class="material-symbols-outlined !text-[18px]">folder</span><span>room-work</span></a>
 </nav>
-<div id="profileCard" class="mt-8 w-full max-w-sm glass-card flex items-center gap-4 p-4 text-left">
+<div id="profileCard" style="visibility:hidden" class="mt-8 w-full max-w-sm glass-card flex items-center gap-4 p-4 text-left">
 <div class="w-12 h-12 shrink-0">
 <img id="profileAvatar" alt="" class="w-12 h-12 rounded-full object-cover border border-white/30" style="display:none"/>
 <div id="profileInitial" class="w-12 h-12 rounded-full flex items-center justify-center font-headline-sm text-headline-sm text-on-surface bg-white/10 border border-white/30">?</div>
