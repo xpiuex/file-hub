@@ -3,6 +3,7 @@
   var DICT = {
     th: {
       app_title: "DataGrid - ไฟล์และทรัพยากร",
+      uploaded_by: "อัปโหลดโดย",
       profile_guest: "ยังไม่ได้เข้าสู่ระบบ", profile_signin: "เข้าสู่ระบบ", profile_signout: "ออกจากระบบ",
       profile_role_admin: "ผู้ดูแล", profile_role_uploader: "ผู้อัปโหลด", profile_role_none: "ไม่มีสิทธิ์",
       firebase_not_set: "ยังไม่ได้ตั้งค่า Firebase ใน app.js",
@@ -55,6 +56,7 @@
     },
     en: {
       app_title: "DataGrid - Files & Assets",
+      uploaded_by: "by",
       profile_guest: "Not signed in", profile_signin: "Sign in", profile_signout: "Sign out",
       profile_role_admin: "Admin", profile_role_uploader: "Uploader", profile_role_none: "No access",
       firebase_not_set: "Firebase is not configured in app.js",
