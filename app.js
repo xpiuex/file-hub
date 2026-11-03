@@ -247,7 +247,59 @@ async function refreshPermission() {
     }
   }
   logoutBtn.textContent = fbUser ? t("logout") : t("login");
+  await updateProfile();
 }
+
+// แสดงข้อมูลผู้ใช้ที่หน้าแรก: ชื่อ อีเมล รูป และระดับสิทธิ์
+async function updateProfile() {
+  const nameEl = document.getElementById("profileName");
+  const emailEl = document.getElementById("profileEmail");
+  const roleEl = document.getElementById("profileRole");
+  const avatarEl = document.getElementById("profileAvatar");
+  const initialEl = document.getElementById("profileInitial");
+  const loginBtn = document.getElementById("profileLoginBtn");
+  const logoutBtnEl = document.getElementById("profileLogoutBtn");
+
+  if (!fbUser) {
+    nameEl.textContent = t("profile_guest");
+    emailEl.textContent = "";
+    roleEl.textContent = "-";
+    avatarEl.style.display = "none";
+    initialEl.style.display = "flex";
+    initialEl.textContent = "?";
+    loginBtn.style.display = "";
+    logoutBtnEl.style.display = "none";
+    return;
+  }
+
+  const name = fbUser.displayName || fbUser.email || "";
+  nameEl.textContent = name;
+  emailEl.textContent = fbUser.email || "";
+  initialEl.textContent = (name.trim().charAt(0) || "?").toUpperCase();
+  if (fbUser.photoURL) {
+    avatarEl.src = fbUser.photoURL;
+    avatarEl.style.display = "block";
+    initialEl.style.display = "none";
+  } else {
+    avatarEl.style.display = "none";
+    initialEl.style.display = "flex";
+  }
+
+  let roleText = t("profile_role_none");
+  try {
+    const { data } = await withTimeout(sb.rpc("my_role"));
+    if (data === "admin") roleText = t("profile_role_admin");
+    else if (data === "uploader") roleText = t("profile_role_uploader");
+  } catch {
+    // ถ้าอ่านระดับสิทธิ์ไม่ได้ ใช้ข้อความว่าไม่มีสิทธิ์
+  }
+  roleEl.textContent = roleText;
+  loginBtn.style.display = "none";
+  logoutBtnEl.style.display = "";
+}
+
+document.getElementById("profileLoginBtn").addEventListener("click", signInGoogle);
+document.getElementById("profileLogoutBtn").addEventListener("click", () => logoutBtn.click());
 
 async function signInGoogle() {
   if (!fbAuth) return showLogin(t("firebase_not_set"));
