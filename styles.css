@@ -1,4 +1,4 @@
-    .material-symbols-outlined {
+.material-symbols-outlined {
       font-size: 18px;
       line-height: 1;
       display: inline-block;
@@ -249,4 +249,12 @@ main,
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   box-shadow: 0 16px 40px rgb(0 0 0 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.2);
+}
+
+/* ---------- เมนู Home / room-work ย้ายไปแถบด้านบน ---------- */
+#sidebar,
+#menuBtn { display: none !important; }
+#routeNav .sidebar-link.is-active {
+  color: rgb(var(--c-on-surface));
+  border-bottom: 2px solid rgb(var(--c-primary-container));
 }
