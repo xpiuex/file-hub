@@ -423,6 +423,16 @@ function routeFromHash() {
 }
 window.addEventListener("hashchange", routeFromHash);
 
+// ปุ่ม หน้าแรก / room-work บนแถบด้านบน: จัดการคลิกเองเพื่อให้ทำงานแน่นอน
+document.querySelectorAll("#routeNav [data-route]").forEach((link) => {
+  link.addEventListener("click", (e) => {
+    e.preventDefault();
+    const target = link.dataset.route === "workspace" ? "#room-work" : "";
+    if (location.hash !== target) location.hash = target;
+    routeFromHash();
+  });
+});
+
 document.getElementById("menuBtn").addEventListener("click", () => {
   setSidebarOpen(!sidebarEl.classList.contains("open"));
 });
