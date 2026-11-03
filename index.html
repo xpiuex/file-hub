@@ -77,6 +77,19 @@
 <a href="#" class="sidebar-link glass-btn" data-route="home"><span class="material-symbols-outlined !text-[18px]">home</span><span data-i18n="sidebar_home">หน้าแรก</span></a>
 <a href="#room-work" class="sidebar-link glass-btn" data-route="workspace"><span class="material-symbols-outlined !text-[18px]">folder</span><span>room-work</span></a>
 </nav>
+<div id="profileCard" class="mt-8 w-full max-w-sm glass-card flex items-center gap-4 p-4 text-left">
+<div class="w-12 h-12 shrink-0">
+<img id="profileAvatar" alt="" class="w-12 h-12 rounded-full object-cover border border-white/30" style="display:none"/>
+<div id="profileInitial" class="w-12 h-12 rounded-full flex items-center justify-center font-headline-sm text-headline-sm text-on-surface bg-white/10 border border-white/30">?</div>
+</div>
+<div class="min-w-0 flex-1">
+<div id="profileName" class="font-label-md text-label-md text-on-surface truncate"></div>
+<div id="profileEmail" class="font-body-sm text-body-sm text-outline truncate"></div>
+<div id="profileRole" class="mt-1 inline-flex px-2 py-0.5 rounded-full text-label-sm font-label-sm text-on-surface-variant bg-white/10 border border-white/20">-</div>
+</div>
+<button type="button" id="profileLoginBtn" class="glass-btn shrink-0" data-i18n="profile_signin">เข้าสู่ระบบ</button>
+<button type="button" id="profileLogoutBtn" class="glass-btn shrink-0" style="display:none" data-i18n="profile_signout">ออกจากระบบ</button>
+</div>
 </div>
 </section>
 <section id="viewWorkspace" class="hidden">
