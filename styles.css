@@ -75,9 +75,7 @@ html, body { max-width: 100%; }
 #viewWorkspace {
   position: relative;
 }
-#viewHome::before,
-#loginScreen::before,
-#viewWorkspace::before {
+#loginScreen::before {
   content: "";
   position: absolute;
   inset: -15%;
@@ -105,9 +103,8 @@ html, body { max-width: 100%; }
   100% { transform: translate3d(-4%, 8%, 0) scale(1.08) rotate(-2deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  #viewHome::before,
-  #loginScreen::before,
-  #viewWorkspace::before { animation: none; }
+  body::before,
+  #loginScreen::before { animation: none; }
 }
 
 /* ---------- home dot grid ---------- */
@@ -220,4 +217,29 @@ html, body { max-width: 100%; }
 /* ปุ่มที่เลือกอยู่ (ตัวกรองประเภท) */
 #viewWorkspace .bg-primary-container\/20 {
   background: linear-gradient(135deg, rgb(var(--c-primary) / 0.4), rgb(var(--c-tertiary) / 0.2)) !important;
+}
+
+/* ---------- พื้นหลังไล่สีทั้งเว็บ (ให้กระจกมีของให้เบลอ และไม่มีช่องว่างสีดำ) ---------- */
+body {
+  position: relative;
+  isolation: isolate;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: -15%;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(40% 36% at 18% 22%, rgb(var(--c-primary-container) / 0.45), transparent 70%),
+    radial-gradient(34% 32% at 84% 26%, rgb(var(--c-tertiary-container) / 0.36), transparent 70%),
+    radial-gradient(42% 40% at 72% 88%, rgb(var(--c-secondary-container) / 0.5), transparent 70%),
+    radial-gradient(32% 30% at 12% 88%, rgb(var(--c-primary) / 0.26), transparent 70%);
+  animation: aurora-drift 14s ease-in-out infinite alternate;
+}
+/* พื้นของแต่ละส่วนโปร่งใส เพื่อให้เห็นพื้นหลังรวม */
+main,
+#viewHome,
+#viewWorkspace {
+  background-color: transparent !important;
 }
