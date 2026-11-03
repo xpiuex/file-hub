@@ -1,4 +1,5 @@
-/* พื้นหลังจุดของหน้าแรก: ตาราง (grid) ที่ผลักออกจากเมาส์ (เดสก์ท็อป) หรือจุดสัมผัส (มือถือ/แท็บเล็ต) */
+/* พื้นหลังจุดของหน้าแรก: ตาราง (grid) ที่ผลักออกจากเมาส์ (เดสก์ท็อป) หรือจุดสัมผัส (มือถือ/แท็บเล็ต)
+   ปรับให้เบาลง: วาดด้วย fillRect, อ่านสีไม่บ่อย, และหยุดคำนวณเมื่อจุดกลับนิ่งแล้ว */
 (function () {
   const section = document.getElementById("viewHome");
   if (!section) return;
@@ -9,24 +10,26 @@
   section.prepend(canvas);
   const ctx = canvas.getContext("2d");
 
-  const SPACING = 22;      // ระยะห่างระหว่างจุด (px)
-  const DOT = 1.3;         // รัศมีจุด (px)
-  const R_MOUSE = 120;     // รัศมีอิทธิพลของเมาส์
-  const R_TOUCH = 150;     // รัศมีอิทธิพลของการสัมผัส
-  const FORCE = 3.2;       // แรงผลัก
-  const K = 0.06;          // แรงดึงกลับไปตำแหน่งเดิม (สปริง)
-  const DAMP = 0.82;       // แรงหน่วง ทำให้เคลื่อนไหวลื่นและหยุดนิ่ง
+  const SPACING = 22;
+  const DOT = 1.4;
+  const R_MOUSE = 120;
+  const R_TOUCH = 150;
+  const FORCE = 3.2;
+  const K = 0.06;
+  const DAMP = 0.82;
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let w = 0, h = 0, dpr = 1, dots = [];
-  let ptr = { active: false, x: 0, y: 0, r: R_MOUSE };
+  let color = "#888";
+  let tick = 0;
+  const ptr = { active: false, x: 0, y: 0, r: R_MOUSE };
   let visible = false, running = false;
 
   function build() {
     const rect = section.getBoundingClientRect();
     w = rect.width;
     h = rect.height;
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     canvas.style.width = w + "px";
@@ -47,23 +50,20 @@
     }
   }
 
-  // สีจุดไล่จาก primary ไป tertiary ตามตำแหน่ง ให้หน้าแรกมีสีสัน
-  function palette() {
-    const cs = getComputedStyle(document.documentElement);
-    const a = (cs.getPropertyValue("--c-primary").trim() || "180 197 255").split(/\s+/).map(Number);
-    const b = (cs.getPropertyValue("--c-tertiary").trim() || "255 181 150").split(/\s+/).map(Number);
-    return { a, b };
-  }
-  function mix(p, q, t) {
-    return `rgb(${Math.round(p[0] + (q[0] - p[0]) * t)} ${Math.round(p[1] + (q[1] - p[1]) * t)} ${Math.round(p[2] + (q[2] - p[2]) * t)} / 0.85)`;
+  function readColor() {
+    const v = getComputedStyle(document.documentElement).getPropertyValue("--c-primary").trim();
+    color = v ? `rgb(${v} / 0.75)` : "#888";
   }
 
   function frame() {
     if (!running) return;
+    if (tick++ % 60 === 0) readColor();
+
     ctx.clearRect(0, 0, w, h);
-    const pal = palette();
+    ctx.fillStyle = color;
 
     const R = ptr.r, R2 = R * R;
+    let moving = false;
     for (const d of dots) {
       if (ptr.active && !reduceMotion) {
         const dx = d.x - ptr.x, dy = d.y - ptr.y;
@@ -76,7 +76,6 @@
           d.vy += (dy / dist) * push;
         }
       }
-      // สปริงดึงกลับ + หน่วง
       d.vx += -K * (d.x - d.ox);
       d.vy += -K * (d.y - d.oy);
       d.vx *= DAMP;
@@ -84,30 +83,33 @@
       d.x += d.vx;
       d.y += d.vy;
 
-      ctx.fillStyle = mix(pal.a, pal.b, Math.min(1, Math.max(0, (d.ox / (w || 1) + d.oy / (h || 1)) / 2)));
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, DOT, 0, Math.PI * 2);
-      ctx.fill();
+      if (Math.abs(d.vx) + Math.abs(d.vy) > 0.02 || Math.abs(d.x - d.ox) + Math.abs(d.y - d.oy) > 0.05) {
+        moving = true;
+      }
+      ctx.fillRect(d.x - DOT / 2, d.y - DOT / 2, DOT, DOT);
     }
-    requestAnimationFrame(frame);
+
+    // หยุดคำนวณเมื่อไม่มีการสัมผัสและจุดกลับนิ่งแล้ว (จะเริ่มใหม่เมื่อมีการสัมผัส)
+    if (ptr.active || moving) {
+      requestAnimationFrame(frame);
+    } else {
+      running = false;
+    }
   }
 
   function startLoop() {
-    if (running) return;
+    if (running || !visible) return;
     running = true;
     requestAnimationFrame(frame);
   }
-  function stopLoop() {
-    running = false;
-  }
 
-  // ตำแหน่งของเมาส์/นิ้วเทียบกับพื้นที่หน้าแรก
   function setPointer(e) {
     const r = section.getBoundingClientRect();
     ptr.x = e.clientX - r.left;
     ptr.y = e.clientY - r.top;
     ptr.r = e.pointerType === "touch" ? R_TOUCH : R_MOUSE;
     ptr.active = true;
+    startLoop();
   }
   function clearPointer() {
     ptr.active = false;
@@ -119,16 +121,17 @@
   section.addEventListener("pointercancel", clearPointer);
   section.addEventListener("pointerleave", clearPointer);
 
-  // สร้างตารางใหม่เมื่อขนาดเปลี่ยน (รวมถึงตอนหน้าแรกถูกแสดงครั้งแรก)
   new ResizeObserver(() => {
     build();
+    startLoop();
   }).observe(section);
 
-  // หยุดการคำนวณเมื่อหน้าแรกไม่ได้แสดงอยู่
   new IntersectionObserver((entries) => {
     visible = entries[0].isIntersecting;
-    visible ? startLoop() : stopLoop();
+    if (visible) startLoop();
+    else running = false;
   }).observe(section);
 
   build();
+  readColor();
 })();
