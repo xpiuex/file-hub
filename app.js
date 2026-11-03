@@ -592,7 +592,7 @@ function setView(v) {
   view = v;
   page = 1;
   selected.clear();
-  document.querySelectorAll("header nav a").forEach((a) => {
+  document.querySelectorAll("#headerNav a").forEach((a) => {
     a.className = a.dataset.view === v ? NAV_ACTIVE : NAV_INACTIVE;
   });
   render();
@@ -1056,9 +1056,9 @@ function init() {
   setAct(byKey("import_cloud"), "import-url");
 
   // ทำให้เมนูด้านบนแสดงบนมือถือด้วย (เลื่อนแนวนอนได้)
-  const nav = document.querySelector("header nav");
-  if (nav) nav.className = "flex items-center gap-4 ml-2 overflow-x-auto whitespace-nowrap";
-  document.querySelectorAll("header nav a").forEach((a) => {
+  const nav = document.getElementById("headerNav");
+  if (nav) nav.className = "flex items-center gap-4 ml-2 whitespace-nowrap";
+  document.querySelectorAll("#headerNav a").forEach((a) => {
     a.addEventListener("click", (e) => {
       e.preventDefault();
       const v = a.dataset.view;
