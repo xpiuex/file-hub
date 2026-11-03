@@ -66,10 +66,14 @@ html, body { max-width: 100%; }
   overflow: hidden;
   background-color: rgb(var(--c-background));
 }
-#loginScreen,
-#viewWorkspace {
+#loginScreen {
   isolation: isolate;
   overflow: hidden;
+  background-color: rgb(var(--c-background));
+}
+#viewWorkspace {
+  isolation: isolate;
+  overflow: visible;
   background-color: rgb(var(--c-background));
 }
 #viewWorkspace {
@@ -279,3 +283,6 @@ main,
   outline: none;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* ให้พื้นที่หน้าทำงานเลื่อนลงดูรายการไฟล์ได้เสมอ */
+main { min-height: 0; }
