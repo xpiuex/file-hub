@@ -3,6 +3,8 @@
   var DICT = {
     th: {
       app_title: "DataGrid - ไฟล์และทรัพยากร",
+      profile_guest: "ยังไม่ได้เข้าสู่ระบบ", profile_signin: "เข้าสู่ระบบ", profile_signout: "ออกจากระบบ",
+      profile_role_admin: "ผู้ดูแล", profile_role_uploader: "ผู้อัปโหลด", profile_role_none: "ไม่มีสิทธิ์",
       firebase_not_set: "ยังไม่ได้ตั้งค่า Firebase ใน app.js",
       home_title: "ยินดีต้อนรับสู่ AskFile", home_desc: "พื้นที่จัดเก็บและแชร์ไฟล์งานของทีม เลือก room-work จากเมนูเพื่อเริ่มใช้งาน",
       sidebar_home: "หน้าแรก", google_login: "เข้าสู่ระบบด้วย Google", or_divider: "หรือ", menu_open: "เปิดเมนู",
@@ -53,6 +55,8 @@
     },
     en: {
       app_title: "DataGrid - Files & Assets",
+      profile_guest: "Not signed in", profile_signin: "Sign in", profile_signout: "Sign out",
+      profile_role_admin: "Admin", profile_role_uploader: "Uploader", profile_role_none: "No access",
       firebase_not_set: "Firebase is not configured in app.js",
       home_title: "Welcome to AskFile", home_desc: "Store and share your team's files. Choose room-work from the menu to get started.",
       sidebar_home: "Home", google_login: "Sign in with Google", or_divider: "or", menu_open: "Open menu",
