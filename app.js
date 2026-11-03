@@ -514,7 +514,7 @@ function rowHtml(f) {
         </div>
         <div class="flex flex-col min-w-0">
           <span class="font-medium text-on-surface truncate group-hover:text-primary transition-colors">${esc(f.file_name)}</span>
-          <span class="font-body-sm text-body-sm text-outline truncate">${esc(info.label)}</span>
+          <span class="font-body-sm text-body-sm text-outline truncate">${esc(info.label)} · ${esc(t("uploaded_by"))} ${esc(f.uploaded_by_name || f.uploaded_by_email || "-")}</span>
         </div>
       </div>
     </td>
@@ -962,6 +962,8 @@ async function uploadFileObject(file) {
     file_size: file.size,
     storage_path: storagePath,
     content_hash: hash,
+    uploaded_by_email: fbUser?.email || null,
+    uploaded_by_name: fbUser?.displayName || fbUser?.email || null,
     url: "",
   });
   if (error) {
