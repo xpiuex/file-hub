@@ -286,3 +286,65 @@ main,
 
 /* ให้พื้นที่หน้าทำงานเลื่อนลงดูรายการไฟล์ได้เสมอ */
 main { min-height: 0; }
+
+/* ---------- อนิเมชันข้อความต้อนรับ (ตอนเข้าหน้าและตอนค้างอยู่หน้านี้) ---------- */
+@keyframes welcome-in {
+  from { opacity: 0; transform: translateY(18px); filter: blur(6px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+@keyframes welcome-shimmer {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes welcome-glow {
+  0%, 100% { box-shadow: 0 10px 30px rgb(0 0 0 / 0.25), inset 0 1px 0 rgb(255 255 255 / 0.3); }
+  50%      { box-shadow: 0 14px 40px rgb(var(--c-primary) / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.3); }
+}
+.welcome-title,
+.welcome-desc,
+.welcome-nav {
+  opacity: 0;
+  animation: welcome-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+.welcome-title { animation-delay: 0.1s; }
+.welcome-desc  { animation-delay: 0.35s; }
+.welcome-nav   { animation-delay: 0.6s; }
+
+/* หัวข้อมีแสงวิ่งผ่านช้า ๆ ตลอดเวลาที่อยู่หน้านี้ */
+.welcome-title {
+  background-image: linear-gradient(90deg,
+    rgb(var(--c-on-surface)) 0%,
+    rgb(var(--c-primary)) 35%,
+    rgb(var(--c-on-surface)) 60%,
+    rgb(var(--c-tertiary)) 85%,
+    rgb(var(--c-on-surface)) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.welcome-title.welcome-shimmer-on {
+  animation: welcome-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s forwards,
+             welcome-shimmer 7s linear 1s infinite;
+}
+
+/* ปุ่มหลักหายใจเบา ๆ ให้รู้สึกมีชีวิต */
+.welcome-nav .glass-btn {
+  animation: welcome-glow 4.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-title,
+  .welcome-desc,
+  .welcome-nav,
+  .welcome-nav .glass-btn {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+  .welcome-title {
+    color: rgb(var(--c-on-surface));
+    background: none;
+  }
+}
