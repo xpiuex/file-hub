@@ -252,6 +252,7 @@ async function refreshPermission() {
 
 // แสดงข้อมูลผู้ใช้ที่หน้าแรก: ชื่อ อีเมล รูป และระดับสิทธิ์
 async function updateProfile() {
+  document.getElementById("profileCard").style.visibility = "visible";
   const nameEl = document.getElementById("profileName");
   const emailEl = document.getElementById("profileEmail");
   const roleEl = document.getElementById("profileRole");
@@ -357,6 +358,7 @@ const authListener = async (user) => {
 setTimeout(() => {
   if (!authReady) {
     authReady = true;
+    updateProfile();
     routeFromHash();
   }
 }, 3000);
