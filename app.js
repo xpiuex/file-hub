@@ -595,6 +595,7 @@ function setView(v) {
   view = v;
   page = 1;
   selected.clear();
+  document.getElementById("purgeAllBtn").style.display = v === "trash" ? "" : "none";
   document.querySelectorAll("#headerNav a").forEach((a) => {
     a.className = a.dataset.view === v ? NAV_ACTIVE : NAV_INACTIVE;
   });
@@ -661,6 +662,9 @@ document.addEventListener("click", async (e) => {
       if (openPop) openPop.innerHTML = colsMenuHtml();
       applyColumns();
       return;
+    case "purge-all":
+      closePop();
+      return requireAdmin(purgeAllTrash);
     case "import-url":
       closePop();
       return importFromUrl();
@@ -887,6 +891,23 @@ async function purgeFile(f) {
   await sb.storage.from(BUCKET).remove([f.storage_path]);
   logActivity(t("act_purge", { name: f.file_name }));
   showToast(t("purged"));
+  loadAll();
+}
+
+
+/* ---------- ลบทั้งหมดในถังขยะ (เฉพาะผู้ดูแล) ---------- */
+async function purgeAllTrash() {
+  const count = files.filter((f) => f.deleted_at).length;
+  if (!count) return showToast(t("empty_trash"), "error");
+  if (!confirm(t("confirm_purge_all", { n: count }))) return;
+
+  // ฐานข้อมูลลบแถวทั้งหมดในถังขยะ แล้วคืนรายการไฟล์ที่ต้องลบออกจาก Storage
+  const { data, error } = await sb.rpc("purge_trash");
+  if (error) return showToast(error.message, "error");
+  const paths = data || [];
+  if (paths.length) await sb.storage.from(BUCKET).remove(paths);
+  logActivity(t("act_purge_all", { n: paths.length }));
+  showToast(t("purged_all"));
   loadAll();
 }
 
