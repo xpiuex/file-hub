@@ -403,3 +403,66 @@ body[data-page="home"] #routeNav {
     gap: 1.1rem;
   }
 }
+
+/* ---------- แถบด้านบนบนมือถือ (ปรับใหม่): แถว 1 = โลโก้ + ปุ่ม, แถว 2 = Home / room-work, แถว 3 = เมนูไฟล์ ---------- */
+@media (max-width: 767px) {
+  #topNav {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.5rem;
+    row-gap: 0.45rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  /* ให้โลโก้และเมนูทำงานเป็นส่วนหนึ่งของกริดหลัก */
+  #topLeft { display: contents; }
+  #headerBrand {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+  #topRight {
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: flex-end;
+    gap: 0.3rem;
+  }
+  /* ซ่อนรูปโปรไฟล์และเส้นคั่นบนแถวบนให้พอดีจอ (การ์ดโปรไฟล์ในหน้าแรกยังแสดงข้อมูลอยู่) */
+  #topRight > div:last-child,
+  #topRight > div.h-4 { display: none !important; }
+  #topRight button {
+    font-size: 0.8rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  /* Home / room-work: แถวที่ 2 อยู่กึ่งกลางในหน้าแรก และชิดซ้ายในหน้า room-work */
+  #routeNav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+    gap: 1.1rem;
+    position: static !important;
+    transform: none !important;
+    top: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+  }
+  body[data-page="workspace"] #routeNav {
+    justify-self: start;
+  }
+
+  /* เมนูไฟล์ (Files / Shared / Recent / Trash) อยู่แถวที่ 3 เลื่อนแนวนอนได้ */
+  #headerNav {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    width: 100%;
+    justify-content: center;
+    gap: 1.1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+}
