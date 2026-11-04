@@ -18,13 +18,34 @@
 <input type="file" id="fileInputHidden" class="hidden">
 
 <!-- LOGIN SCREEN -->
-<div id="loginScreen" class="hidden fixed inset-0 z-[100] bg-surface items-center justify-center p-4">
-<div class="w-full max-w-sm bg-surface-container-low border border-outline-variant rounded-xl p-6 space-y-3">
-<h2 class="font-headline-md text-headline-md text-on-surface" data-i18n="login">เข้าสู่ระบบ</h2>
-<button type="button" id="googleLoginBtn" class="glass-btn w-full h-9 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-on-surface/90 flex items-center justify-center gap-2"><span class="material-symbols-outlined !text-[16px]">account_circle</span><span data-i18n="google_login">เข้าสู่ระบบด้วย Google</span></button>
-<button type="button" id="loginCancel" class="glass-btn w-full h-9 rounded-lg border border-outline-variant text-on-surface font-label-md text-label-md hover:bg-surface-container" data-i18n="login_cancel">ยกเลิก</button>
-<p id="loginMsg" class="text-body-sm text-error min-h-[1rem]"></p>
+<div id="loginScreen" class="hidden fixed inset-0 z-[100] flex-col md:flex-row">
+
+<div class="login-left hidden md:flex flex-1 flex-col justify-between p-10 lg:p-14 text-on-surface">
+<div class="font-headline-sm text-headline-sm font-semibold tracking-tight">AskFile</div>
+<div class="max-w-xl">
+<h2 class="font-headline-lg text-headline-lg font-semibold tracking-tight" data-i18n="login_headline">จัดเก็บและแชร์ไฟล์งานของทีมอย่างปลอดภัย</h2>
+<ul class="mt-10 grid grid-cols-2 gap-x-8 gap-y-7">
+<li class="flex items-start gap-3"><span class="material-symbols-outlined text-primary">cloud_upload</span><span class="font-body-md text-body-md text-on-surface-variant" data-i18n="login_feat1">อัปโหลดและจัดระเบียบไฟล์โปรเจกต์</span></li>
+<li class="flex items-start gap-3"><span class="material-symbols-outlined text-primary">share</span><span class="font-body-md text-body-md text-on-surface-variant" data-i18n="login_feat2">แชร์ลิงก์ที่หมดอายุได้ตามเวลา</span></li>
+<li class="flex items-start gap-3"><span class="material-symbols-outlined text-primary">verified_user</span><span class="font-body-md text-body-md text-on-surface-variant" data-i18n="login_feat3">เข้าใช้งานด้วยบัญชี Google ที่ได้รับอนุญาต</span></li>
+<li class="flex items-start gap-3"><span class="material-symbols-outlined text-primary">delete</span><span class="font-body-md text-body-md text-on-surface-variant" data-i18n="login_feat4">ถังขยะและกู้คืนไฟล์ได้</span></li>
+</ul>
 </div>
+<div class="font-body-sm text-body-sm text-outline" data-i18n="login_footer">ระบบนี้จำกัดการเข้าถึงเฉพาะอีเมลที่อนุญาต</div>
+</div>
+
+<div class="login-right flex flex-1 items-center justify-center p-6">
+<div class="glass-card w-full max-w-sm p-8 space-y-5">
+<div class="text-center space-y-1">
+<h1 class="font-headline-md text-headline-md font-semibold tracking-tight text-on-surface" data-i18n="login">เข้าสู่ระบบ</h1>
+<p class="font-body-sm text-body-sm text-outline" data-i18n="login_sub">ใช้บัญชี Google ที่ได้รับอนุญาตเท่านั้น</p>
+</div>
+<button type="button" id="googleLoginBtn" class="glass-btn"><span class="material-symbols-outlined !text-[18px]">account_circle</span><span data-i18n="google_login">เข้าสู่ระบบด้วย Google</span></button>
+<button type="button" id="loginCancel" class="glass-btn" data-i18n="login_cancel">ยกเลิก</button>
+<p id="loginMsg" class="text-center text-body-sm text-error min-h-[1rem]"></p>
+</div>
+</div>
+
 </div>
 
 <!-- TOP NAV BAR -->
