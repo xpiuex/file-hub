@@ -3,6 +3,10 @@
   var DICT = {
     th: {
       app_title: "DataGrid - ไฟล์และทรัพยากร",
+      login_headline: "จัดเก็บและแชร์ไฟล์งานของทีมอย่างปลอดภัย", login_sub: "ใช้บัญชี Google ที่ได้รับอนุญาตเท่านั้น",
+      login_feat1: "อัปโหลดและจัดระเบียบไฟล์โปรเจกต์", login_feat2: "แชร์ลิงก์ที่หมดอายุได้ตามเวลา",
+      login_feat3: "เข้าใช้งานด้วยบัญชี Google ที่ได้รับอนุญาต", login_feat4: "ถังขยะและกู้คืนไฟล์ได้",
+      login_footer: "ระบบนี้จำกัดการเข้าถึงเฉพาะอีเมลที่อนุญาต",
       purge_all: "ลบทั้งหมด", confirm_purge_all: "ลบ {n} ไฟล์ในถังขยะถาวร? กู้คืนไม่ได้",
       purged_all: "ลบทั้งหมดในถังขยะแล้ว", act_purge_all: "ลบถาวรทั้งหมด {n} ไฟล์",
       uploaded_by: "อัปโหลดโดย",
@@ -58,6 +62,10 @@
     },
     en: {
       app_title: "DataGrid - Files & Assets",
+      login_headline: "Store and share your team's files securely", login_sub: "Use an approved Google account only",
+      login_feat1: "Upload and organize project files", login_feat2: "Share links that expire on schedule",
+      login_feat3: "Sign in with an approved Google account", login_feat4: "Trash and restore files",
+      login_footer: "Access is limited to approved emails",
       purge_all: "Delete all", confirm_purge_all: "Permanently delete {n} files in trash? This cannot be undone.",
       purged_all: "Trash emptied", act_purge_all: "Permanently deleted {n} files",
       uploaded_by: "by",
