@@ -383,3 +383,23 @@ main { min-height: 0; }
   #headerNav::-webkit-scrollbar { display: none; }
   #routeNav { gap: 0.9rem; }
 }
+
+/* ---------- หน้าแรก: Home / room-work อยู่กึ่งกลางแถบด้านบน ---------- */
+#topNav { position: relative; }
+body[data-page="home"] #routeNav {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+/* หน้า room-work: กลับไปอยู่ทางซ้ายตามเดิม (ไม่ต้องทำอะไรเพิ่ม) */
+
+@media (max-width: 767px) {
+  body[data-page="home"] #routeNav {
+    top: auto;
+    bottom: 0.45rem;
+    transform: translateX(-50%);
+    gap: 1.1rem;
+  }
+}
