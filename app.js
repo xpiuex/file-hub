@@ -704,7 +704,7 @@ function addTransfer(name) {
     </div>`;
   el.querySelector("[data-name]").textContent = name;
   ensureTransferPanel().appendChild(el);
-  return { el };
+  return { el, done: false };
 }
 
 function updateTransfer(t, received, total) {
@@ -714,6 +714,7 @@ function updateTransfer(t, received, total) {
     bar.style.width = pct + "%";
     t.el.querySelector("[data-pct]").textContent = pct.toFixed(0) + "%";
     t.el.querySelector("[data-size]").textContent = `${fmtSize(received)} / ${fmtSize(total)}`;
+    if (received >= total) finishTransfer(t, true);
   } else {
     bar.style.width = "100%";
     bar.classList.add("animate-pulse");
@@ -723,19 +724,21 @@ function updateTransfer(t, received, total) {
 }
 
 function finishTransfer(t, ok, msg = "") {
+  if (t.done) return;
+  t.done = true;
   const bar = t.el.querySelector("[data-bar]");
+  const st = t.el.querySelector("[data-status]");
   bar.classList.remove("animate-pulse");
   if (ok) {
     bar.style.width = "100%";
     t.el.querySelector("[data-pct]").textContent = "100%";
-    t.el.querySelector("[data-status]").textContent = t("done");
-    setTimeout(() => t.el.remove(), 4000);
+    st.textContent = t("done");
+    setTimeout(() => t.el.remove(), 1500);
   } else {
     bar.classList.replace("bg-primary-container", "bg-error");
-    const st = t.el.querySelector("[data-status]");
     st.textContent = t("failed") + (msg ? ": " + msg : "");
     st.classList.add("text-error");
-    setTimeout(() => t.el.remove(), 8000);
+    setTimeout(() => t.el.remove(), 6000);
   }
 }
 
