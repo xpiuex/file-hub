@@ -86,10 +86,10 @@ html, body { max-width: 100%; }
   z-index: -1;
   pointer-events: none;
   background-image:
-    radial-gradient(40% 36% at 18% 22%, rgb(var(--c-primary-container) / 0.40), transparent 70%),
-    radial-gradient(34% 32% at 84% 26%, rgb(var(--c-tertiary-container) / 0.32), transparent 70%),
-    radial-gradient(42% 40% at 72% 88%, rgb(var(--c-secondary-container) / 0.45), transparent 70%),
-    radial-gradient(32% 30% at 12% 88%, rgb(var(--c-primary) / 0.22), transparent 70%);
+    radial-gradient(70% 55% at 50% 100%, rgb(var(--c-primary-container) / 0.55), transparent 70%),
+    radial-gradient(45% 40% at 25% 100%, rgb(var(--c-tertiary-container) / 0.35), transparent 70%),
+    radial-gradient(45% 40% at 75% 100%, rgb(var(--c-secondary-container) / 0.45), transparent 70%),
+    radial-gradient(35% 30% at 50% 85%, rgb(var(--c-primary) / 0.25), transparent 70%);
   animation: aurora-drift 14s ease-in-out infinite alternate;
 }
 #viewHome {
@@ -231,10 +231,10 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background-image:
-    radial-gradient(40% 36% at 18% 22%, rgb(var(--c-primary-container) / 0.45), transparent 70%),
-    radial-gradient(34% 32% at 84% 26%, rgb(var(--c-tertiary-container) / 0.36), transparent 70%),
-    radial-gradient(42% 40% at 72% 88%, rgb(var(--c-secondary-container) / 0.5), transparent 70%),
-    radial-gradient(32% 30% at 12% 88%, rgb(var(--c-primary) / 0.26), transparent 70%);
+    radial-gradient(70% 55% at 50% 100%, rgb(var(--c-primary-container) / 0.55), transparent 70%),
+    radial-gradient(45% 40% at 25% 100%, rgb(var(--c-tertiary-container) / 0.35), transparent 70%),
+    radial-gradient(45% 40% at 75% 100%, rgb(var(--c-secondary-container) / 0.45), transparent 70%),
+    radial-gradient(35% 30% at 50% 85%, rgb(var(--c-primary) / 0.25), transparent 70%);
   animation: aurora-drift 18s ease-in-out infinite alternate;
   will-change: transform;
 }
