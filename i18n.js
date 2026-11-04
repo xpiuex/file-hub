@@ -3,6 +3,8 @@
   var DICT = {
     th: {
       app_title: "DataGrid - ไฟล์และทรัพยากร",
+      purge_all: "ลบทั้งหมด", confirm_purge_all: "ลบ {n} ไฟล์ในถังขยะถาวร? กู้คืนไม่ได้",
+      purged_all: "ลบทั้งหมดในถังขยะแล้ว", act_purge_all: "ลบถาวรทั้งหมด {n} ไฟล์",
       uploaded_by: "อัปโหลดโดย",
       profile_guest: "ยังไม่ได้เข้าสู่ระบบ", profile_signin: "เข้าสู่ระบบ", profile_signout: "ออกจากระบบ",
       profile_role_admin: "ผู้ดูแล", profile_role_uploader: "ผู้อัปโหลด", profile_role_none: "ไม่มีสิทธิ์",
@@ -56,6 +58,8 @@
     },
     en: {
       app_title: "DataGrid - Files & Assets",
+      purge_all: "Delete all", confirm_purge_all: "Permanently delete {n} files in trash? This cannot be undone.",
+      purged_all: "Trash emptied", act_purge_all: "Permanently deleted {n} files",
       uploaded_by: "by",
       profile_guest: "Not signed in", profile_signin: "Sign in", profile_signout: "Sign out",
       profile_role_admin: "Admin", profile_role_uploader: "Uploader", profile_role_none: "No access",
