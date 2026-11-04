@@ -398,6 +398,7 @@ function setSidebarOpen(open) {
 
 function setPage(name) {
   const ws = name === "workspace";
+  document.body.dataset.page = name;
   viewHome.classList.toggle("hidden", ws);
   document.body.classList.toggle("home-page", !ws);
   viewWorkspace.classList.toggle("hidden", !ws);
