@@ -348,3 +348,38 @@ main { min-height: 0; }
     background: none;
   }
 }
+
+/* ---------- แถบด้านบนบนมือถือ: แถวที่ 1 = โลโก้และปุ่ม, แถวที่ 2 = เมนู ---------- */
+@media (max-width: 767px) {
+  #topNav {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem 0.75rem;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+  #topLeft {
+    grid-column: 1;
+    grid-row: 1;
+    gap: 0.9rem;
+    min-width: 0;
+    overflow: hidden;
+  }
+  #topRight {
+    grid-column: 2;
+    grid-row: 1;
+    gap: 0.4rem;
+  }
+  #headerNav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    justify-content: center;
+    gap: 1.1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #headerNav::-webkit-scrollbar { display: none; }
+  #routeNav { gap: 0.9rem; }
+}
