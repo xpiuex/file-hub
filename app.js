@@ -467,10 +467,27 @@ async function loadNotes() {
   renderNotes();
 }
 
+function noteRowHtml(n) {
+  const c = n.color && n.color !== "none" ? NOTE_COLOR_RGB[n.color] : null;
+  const dot = c
+    ? `<span class="inline-block w-2.5 h-2.5 rounded-full" style="background:rgb(${c})"></span>`
+    : `<span class="inline-block w-2.5 h-2.5 rounded-full border border-white/25"></span>`;
+  const tags = (n.tags || []).map((tg) => `<span class="note-tag">#${esc(tg)}</span>`).join("");
+  const bg = c ? `background:linear-gradient(90deg, rgb(${c} / 0.14), transparent 70%);border-left:3px solid rgb(${c})` : "";
+  return `
+  <div data-note-id="${esc(n.id)}" class="grid grid-cols-[1fr_auto] md:grid-cols-[2fr_1fr_1fr_auto] gap-4 items-center px-4 py-3 border-b border-white/10 hover:bg-white/5 cursor-pointer" style="${bg}">
+    <div class="min-w-0">
+      <div class="font-label-md text-label-md text-on-surface truncate">${esc(n.title || "")}</div>
+      <div class="font-body-sm text-body-sm text-outline truncate">${esc((n.body || "").slice(0, 90))}</div>
+    </div>
+    <div class="hidden md:flex flex-wrap gap-1">${tags}</div>
+    <div class="hidden md:block font-body-sm text-body-sm text-outline">${fmtDate(n.updated_at)}</div>
+    <div class="flex justify-end">${dot}</div>
+  </div>`;
+}
+
 function renderNotes() {
   const q = noteQ.toLowerCase();
-
-  // ชิปแท็กทั้งหมดพร้อมจำนวน
   const counts = {};
   notesList.forEach((n) => (n.tags || []).forEach((tg) => (counts[tg] = (counts[tg] || 0) + 1)));
   document.getElementById("noteTagChips").innerHTML = [
@@ -479,38 +496,32 @@ function renderNotes() {
       `<button type="button" data-note-tag="${esc(tg)}" class="note-chip ${noteTag === tg ? "is-on" : ""}">#${esc(tg)} <span class="opacity-60">${counts[tg]}</span></button>`),
   ].join("");
 
+  document.querySelectorAll("#noteColorPills [data-note-color]").forEach((b) => {
+    const on = b.dataset.noteColor === noteColorFilter;
+    b.className = "h-8 px-3 rounded-full text-label-sm font-label-sm border transition-colors " + (on
+      ? "border-primary/60 bg-primary-container/30 text-on-surface"
+      : "border-white/15 text-on-surface-variant hover:text-on-surface");
+  });
+
   const list = notesList.filter((n) =>
     (noteColorFilter === "all" || (n.color || "none") === noteColorFilter) &&
     (!noteTag || (n.tags || []).includes(noteTag)) &&
-    (!q || [n.title, n.topic, n.body, (n.tags || []).join(" ")].join(" ").toLowerCase().includes(q)));
+    (!q || [n.title, n.body, n.topic, ...(n.tags || [])].join(" ").toLowerCase().includes(q)));
 
-  // จัดกลุ่มตามหัวข้อหลัก
   const groups = {};
-  list.forEach((n) => {
-    const k = (n.topic || "").trim() || "__none";
-    (groups[k] = groups[k] || []).push(n);
-  });
+  list.forEach((n) => { const k = n.topic || "__none"; (groups[k] = groups[k] || []).push(n); });
   const keys = Object.keys(groups).sort((x, y) => (x === "__none") - (y === "__none") || x.localeCompare(y));
 
   document.getElementById("noteList").innerHTML = keys.map((k) => `
-    <section class="space-y-3">
-      <h2 class="font-headline-sm text-headline-sm font-semibold text-on-surface">${k === "__none" ? esc(t("note_no_topic")) : esc(k)}</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        ${groups[k].map(noteCardHtml).join("")}
+    <div>
+      <div class="flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/10">
+        <span class="font-label-md text-label-md font-semibold text-on-surface">${k === "__none" ? esc(t("note_no_topic")) : esc(k)}
+          <span class="text-outline font-body-sm">(${groups[k].length})</span></span>
+        <button type="button" data-note-new-in="${k === "__none" ? "" : esc(k)}" class="text-label-sm font-label-sm text-primary hover:underline">+ ${esc(t("note_new"))}</button>
       </div>
-    </section>`).join("");
-
+      ${groups[k].map(noteRowHtml).join("")}
+    </div>`).join("");
   document.getElementById("noteEmpty").classList.toggle("hidden", list.length > 0);
-}
-
-function noteCardHtml(n) {
-  return `
-  <article data-note-id="${esc(n.id)}" class="glass-card p-4 cursor-pointer space-y-2 transition-transform hover:-translate-y-0.5" style="${noteBg(n.color)}">
-    <h3 class="font-title-md text-body-md font-semibold text-on-surface break-words">${esc(n.title)}</h3>
-    <p class="font-body-sm text-body-sm text-on-surface-variant whitespace-pre-line line-clamp-3">${esc(n.body || "")}</p>
-    <div class="flex flex-wrap gap-1.5">${(n.tags || []).map((tg) => `<span class="note-tag">#${esc(tg)}</span>`).join("")}</div>
-    <div class="font-body-sm text-body-sm text-outline">${esc(t("note_updated"))} ${fmtDate(n.updated_at)}</div>
-  </article>`;
 }
 
 function setNoteColor(c) {
@@ -521,10 +532,10 @@ function setNoteColor(c) {
   });
 }
 
-function openNoteEditor(note) {
+function openNoteEditor(note, topic = "") {
   editingNote = note || null;
   document.getElementById("noteTitle").value = note?.title || "";
-  document.getElementById("noteTopic").value = note?.topic || "";
+  document.getElementById("noteTopic").value = note?.topic || topic || "";
   document.getElementById("noteBody").value = note?.body || "";
   document.getElementById("noteTagsInput").value = (note?.tags || []).join(", ");
   setNoteColor(note?.color || "none");
@@ -599,8 +610,10 @@ document.getElementById("noteSearch").addEventListener("input", (e) => {
   noteQ = e.target.value.trim();
   renderNotes();
 });
-document.getElementById("noteColorFilter").addEventListener("change", (e) => {
-  noteColorFilter = e.target.value;
+document.getElementById("noteColorPills").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-note-color]");
+  if (!b) return;
+  noteColorFilter = b.dataset.noteColor;
   renderNotes();
 });
 document.getElementById("noteTagChips").addEventListener("click", (e) => {
@@ -610,6 +623,8 @@ document.getElementById("noteTagChips").addEventListener("click", (e) => {
   renderNotes();
 });
 document.getElementById("noteList").addEventListener("click", (e) => {
+  const add = e.target.closest("[data-note-new-in]");
+  if (add) return openNoteEditor(null, add.dataset.noteNewIn);
   const card = e.target.closest("[data-note-id]");
   if (!card) return;
   openNoteEditor(notesList.find((n) => n.id === card.dataset.noteId));
