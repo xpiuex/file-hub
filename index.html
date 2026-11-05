@@ -49,37 +49,37 @@
 </div>
 
 <!-- TOP NAV BAR -->
-<header id="topNav" class="flex flex-wrap justify-between items-center gap-2 min-h-[3.5rem] py-2 px-3 md:px-6 w-full border-b border-outline-variant bg-surface shrink-0 z-30">
-<button type="button" id="menuBtn" data-i18n-title="menu_open" class="md:hidden p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors">
-<span class="material-symbols-outlined">menu</span>
+<header id="topNav" class="flex flex-wrap justify-between items-center gap-2 min-h-[2.75rem] py-1 px-3 md:px-5 w-full border-b border-outline-variant bg-surface shrink-0 z-30">
+<button type="button" id="menuBtn" data-i18n-title="menu_open" class="md:hidden p-1 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined !text-[18px]">menu</span>
 </button>
-<div id="topLeft" class="flex flex-1 min-w-0 items-center gap-6">
-<span id="headerBrand" class="font-headline-sm text-headline-sm font-semibold text-on-surface tracking-tight">AskFile</span>
-<nav id="routeNav" class="flex items-center gap-4 whitespace-nowrap">
-<a href="#" class="sidebar-link font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-1" data-route="home"><span data-i18n="sidebar_home">หน้าแรก</span></a>
-<a href="#room-work" class="sidebar-link font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-1" data-route="workspace"><span>room-work</span></a>
+<div id="topLeft" class="flex flex-1 min-w-0 items-center gap-4">
+<span id="headerBrand" class="font-title-md text-title-md font-semibold text-on-surface tracking-tight">AskFile</span>
+<nav id="routeNav" class="flex items-center gap-3 whitespace-nowrap">
+<a href="#" class="sidebar-link font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors pb-0.5" data-route="home"><span data-i18n="sidebar_home">หน้าแรก</span></a>
+<a href="#room-work" class="sidebar-link font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors pb-0.5" data-route="workspace"><span>room-work</span></a>
 </nav>
 </div>
-<nav id="headerNav" class="hidden flex items-center gap-4 overflow-x-auto whitespace-nowrap min-w-0 md:ml-2">
-<a href="#notes" class="text-on-surface font-label-md text-label-md border-b-2 border-primary-container pb-1 transition-colors sidebar-link" data-route="notes"><span data-i18n="note_nav">โน้ต</span></a>
-<a class="text-on-surface font-label-md text-label-md border-b-2 border-primary-container pb-1 transition-colors" href="#" data-view="files"><span data-i18n="nav_files">Files</span></a>
-<a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="shared"><span data-i18n="nav_shared">Shared</span></a>
-<a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="recent"><span data-i18n="nav_recent">Recent</span></a>
-<a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="trash"><span data-i18n="nav_trash">Trash</span></a>
+<nav id="headerNav" class="hidden flex items-center gap-3 overflow-x-auto whitespace-nowrap min-w-0 md:ml-2">
+<a href="#notes" class="text-on-surface font-label-sm text-label-sm border-b-2 border-primary-container pb-0.5 transition-colors sidebar-link" data-route="notes"><span data-i18n="note_nav">โน้ต</span></a>
+<a class="text-on-surface font-label-sm text-label-sm border-b-2 border-primary-container pb-0.5 transition-colors" href="#" data-view="files"><span data-i18n="nav_files">Files</span></a>
+<a class="text-on-surface-variant font-label-sm text-label-sm transition-colors hover:text-on-surface" href="#" data-view="shared"><span data-i18n="nav_shared">Shared</span></a>
+<a class="text-on-surface-variant font-label-sm text-label-sm transition-colors hover:text-on-surface" href="#" data-view="recent"><span data-i18n="nav_recent">Recent</span></a>
+<a class="text-on-surface-variant font-label-sm text-label-sm transition-colors hover:text-on-surface" href="#" data-view="trash"><span data-i18n="nav_trash">Trash</span></a>
 </nav>
 <div id="topRight" class="flex flex-1 items-center justify-end gap-2">
-<button type="button" id="langToggleBtn" data-i18n-title="lang_btn_title" class="h-8 px-2 rounded-lg border border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-sm text-label-sm transition-colors active:scale-[0.98]"><span id="langLabel">EN</span></button>
-<button class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150 active:scale-[0.98]" id="themeToggleBtn" title="Toggle theme">
-<span class="material-symbols-outlined">dark_mode</span>
+<button type="button" id="langToggleBtn" data-i18n-title="lang_btn_title" class="h-7 px-2 rounded-lg border border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-sm text-label-sm transition-colors active:scale-[0.98]"><span id="langLabel">EN</span></button>
+<button class="p-1 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150 active:scale-[0.98]" id="themeToggleBtn" title="Toggle theme">
+<span class="material-symbols-outlined !text-[18px]">dark_mode</span>
 </button>
-<div class="h-4 w-[1px] bg-outline-variant mx-1"></div>
-<button class="h-8 px-3 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-on-surface/90 active:scale-[0.98] transition-all hidden md:flex items-center gap-1.5 shadow-sm" id="headerUpload" style="display:none" data-upload>
-<span class="material-symbols-outlined !text-[16px]">add</span>
+<div class="h-3.5 w-[1px] bg-outline-variant mx-0.5"></div>
+<button class="h-7 px-2.5 rounded-lg bg-on-surface text-surface font-label-sm text-label-sm font-medium hover:bg-on-surface/90 active:scale-[0.98] transition-all hidden md:flex items-center gap-1 shadow-sm" id="headerUpload" style="display:none" data-upload>
+<span class="material-symbols-outlined !text-[14px]">add</span>
 <span><span data-i18n="upload_file">Upload File</span></span>
 </button>
-<button id="logoutBtn" class="h-8 px-3 whitespace-nowrap shrink-0 rounded-lg border border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-md text-label-md transition-colors">ออกจากระบบ</button>
-<div class="ml-1 w-7 h-7 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center overflow-hidden">
-<span class="material-symbols-outlined !text-[16px] text-on-surface-variant">person</span>
+<button id="logoutBtn" class="h-7 px-2.5 whitespace-nowrap shrink-0 rounded-lg border border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-sm text-label-sm transition-colors">ออกจากระบบ</button>
+<div class="ml-0.5 w-6 h-6 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined !text-[14px] text-on-surface-variant">person</span>
 </div>
 </div>
 </header>
@@ -96,7 +96,7 @@
 </aside>
 <main class="flex-1 flex flex-col min-w-0 bg-background md:overflow-y-auto">
 <section id="viewHome">
-<div class="relative z-10 min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center text-center px-6 py-16">
+<div class="relative z-10 min-h-[calc(100vh-2.75rem)] flex flex-col items-center justify-center text-center px-6 py-16">
 <h1 class="font-headline-lg text-headline-lg font-semibold text-on-surface tracking-tight welcome-title welcome-shimmer-on" data-i18n="home_title">ยินดีต้อนรับสู่ AskFile</h1>
 <p class="mt-3 max-w-md font-body-md text-body-md text-on-surface-variant welcome-desc" data-i18n="home_desc">พื้นที่จัดเก็บและแชร์ไฟล์งานของทีม เลือก room-work จากเมนูเพื่อเริ่มใช้งาน</p>
 <nav class="mt-10 flex flex-wrap items-center justify-center gap-4 welcome-nav">
@@ -145,8 +145,8 @@
 <div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface">
 <span class="flex items-center gap-1.5">
 <span class="material-symbols-outlined text-primary !text-[16px]">database</span>
-              <span data-i18n="usage_db">ฐานข้อมูล (Database)</span>
-            </span>
+              <span data-i18n="usage_db">ฐานข้อมูล (Database)</span>
+            </span>
 <span class="font-code-inline text-code-inline text-on-surface-variant" id="dbText">-</span>
 </div>
 <div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
@@ -158,8 +158,8 @@
 <div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface">
 <span class="flex items-center gap-1.5">
 <span class="material-symbols-outlined text-primary !text-[16px]">folder_zip</span>
-              <span data-i18n="usage_st">ไฟล์ที่อัปโหลด (Storage)</span>
-            </span>
+              <span data-i18n="usage_st">ไฟล์ที่อัปโหลด (Storage)</span>
+            </span>
 <span class="font-code-inline text-code-inline text-on-surface-variant" id="stText">-</span>
 </div>
 <div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
@@ -171,8 +171,8 @@
 <span class="font-body-sm text-body-sm text-outline"><span data-i18n="usage_quota">Supabase (ฐานข้อมูล 500 MB, Storage 1 GB)</span></span>
 <button class="h-7 px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface font-label-sm text-label-sm flex items-center gap-1.5 transition-colors active:scale-[0.98]" id="usageRefreshBtn">
 <span class="material-symbols-outlined !text-[14px]">refresh</span>
-              <span data-i18n="refresh_usage">รีเฟรชขนาด</span>
-            </button>
+              <span data-i18n="refresh_usage">รีเฟรชขนาด</span>
+            </button>
 </div>
 </div>
 
@@ -219,28 +219,28 @@
 </div>
 <h2 class="font-headline-md text-headline-md font-semibold tracking-tight text-on-surface"><span data-i18n="empty_title">No files uploaded yet</span></h2>
 <p class="font-body-md text-body-md text-on-surface-variant max-w-md mt-2 mb-6 leading-relaxed">
-            <span data-i18n="empty_desc">Drag and drop your files here or click the button below to upload your first file to this workspace.</span>
-          </p>
+            <span data-i18n="empty_desc">Drag and drop your files here or click the button below to upload your first file to this workspace.</span>
+          </p>
 <div class="flex flex-wrap items-center justify-center gap-3">
 <button class="flex items-center gap-2 h-9 px-4 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-white active:scale-[0.98] transition-all shadow-sm" data-upload>
 <span class="material-symbols-outlined !text-[16px]">add</span>
-              <span data-i18n="upload_plus">+ Upload File</span>
-            </button>
+              <span data-i18n="upload_plus">+ Upload File</span>
+            </button>
 <button class="flex items-center gap-2 h-9 px-4 rounded-lg border border-outline-variant bg-transparent hover:bg-surface-container text-on-surface font-label-md text-label-md active:scale-[0.98] transition-all" onclick="showToast('Import from Cloud: coming soon', 'cloud')">
 <span class="material-symbols-outlined !text-[16px]">cloud</span>
-              <span data-i18n="import_cloud">Import from Cloud</span>
-            </button>
+              <span data-i18n="import_cloud">Import from Cloud</span>
+            </button>
 </div>
 <div class="mt-10 pt-6 border-t border-outline-variant/40 flex flex-col sm:flex-row items-center justify-center gap-3 text-outline font-body-sm text-body-sm text-[11px]">
 <span class="flex items-center gap-1.5">
 <span class="material-symbols-outlined !text-[14px]">description</span>
-              <span data-i18n="formats">Supported formats: PDF, PNG, JPG, SVG, MP4, ZIP (up to 50 MB)</span>
-            </span>
+              <span data-i18n="formats">Supported formats: PDF, PNG, JPG, SVG, MP4, ZIP (up to 50 MB)</span>
+            </span>
 <span class="hidden sm:inline">•</span>
 <span class="flex items-center gap-1 text-on-surface-variant">
 <span class="material-symbols-outlined !text-[13px]">lock</span>
-              <span data-i18n="storage_secure">End-to-end encrypted storage</span>
-            </span>
+              <span data-i18n="storage_secure">End-to-end encrypted storage</span>
+            </span>
 </div>
 </div>
 
@@ -290,7 +290,7 @@
 <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t border-outline-variant bg-surface-container-lowest/60 text-on-surface-variant font-label-sm text-label-sm">
 <div class="text-outline font-medium text-center sm:text-left">
 <span class="text-on-surface font-semibold" id="selCount">0</span> <span data-i18n="sel_of">of</span> <span id="totalCount">0</span> <span data-i18n="sel_suffix">row(s) selected</span>
-            </div>
+            </div>
 <div class="flex flex-wrap items-center gap-4 sm:gap-6 justify-center sm:justify-end">
 <div class="flex items-center gap-2">
 <span class="text-on-surface-variant"><span data-i18n="rows_per_page">Rows per page</span></span>
