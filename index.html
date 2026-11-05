@@ -58,6 +58,7 @@
 <nav id="routeNav" class="flex items-center gap-4 whitespace-nowrap">
 <a href="#" class="sidebar-link font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-1" data-route="home"><span data-i18n="sidebar_home">หน้าแรก</span></a>
 <a href="#room-work" class="sidebar-link font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-1" data-route="workspace"><span>room-work</span></a>
+<a href="#notes" class="sidebar-link font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-1" data-route="notes"><span data-i18n="note_nav">โน้ต</span></a>
 </nav>
 </div>
 <nav id="headerNav" class="hidden flex items-center gap-4 overflow-x-auto whitespace-nowrap min-w-0 md:ml-2">
@@ -324,7 +325,62 @@
 
 </div>
 </section>
+<section id="viewNotes" class="hidden">
+<div class="max-w-[1100px] w-full mx-auto p-4 md:p-6 lg:p-8 space-y-5">
+<div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+<div>
+<h1 class="font-headline-lg text-headline-lg font-semibold tracking-tight text-on-surface" data-i18n="notes_title">โน้ต</h1>
+<p class="font-body-md text-body-md text-on-surface-variant" data-i18n="notes_desc">เขียนบันทึก แท็ก ไฮไลท์ และจัดกลุ่มตามหัวข้อ</p>
+</div>
+<button id="noteNewBtn" type="button" class="glass-btn" data-i18n="note_new">+ โน้ตใหม่</button>
+</div>
+<div class="glass-card p-3 flex flex-col md:flex-row gap-3">
+<input id="noteSearch" type="text" data-i18n-ph="note_search_ph" placeholder="ค้นหาโน้ต..." class="flex-1 h-10 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"/>
+<select id="noteColorFilter" class="h-10 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none">
+<option value="all" data-i18n="note_all_colors">ทุกสี</option>
+<option value="none" data-i18n="note_c_none">ไม่มีสี</option>
+<option value="yellow" data-i18n="note_c_yellow">เหลือง</option>
+<option value="green" data-i18n="note_c_green">เขียว</option>
+<option value="blue" data-i18n="note_c_blue">ฟ้า</option>
+<option value="pink" data-i18n="note_c_pink">ชมพู</option>
+</select>
+</div>
+<div id="noteTagChips" class="flex flex-wrap gap-2"></div>
+<div id="noteList" class="space-y-8"></div>
+<div id="noteEmpty" class="hidden text-center text-outline py-12" data-i18n="note_empty">ยังไม่มีโน้ต</div>
+</div>
+</section>
+
 </main>
+</div>
+
+<!-- NOTE EDITOR -->
+<div id="noteModal" class="hidden fixed inset-0 z-[90] items-center justify-center p-4 bg-black/40">
+<form id="noteForm" class="glass-card w-full max-w-lg p-6 space-y-3">
+<input id="noteTitle" type="text" data-i18n-ph="note_title_ph" placeholder="หัวข้อโน้ต" class="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none font-medium"/>
+<input id="noteTopic" type="text" data-i18n-ph="note_topic_ph" placeholder="หัวข้อหลัก (จัดกลุ่ม)" class="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"/>
+<textarea id="noteBody" rows="8" data-i18n-ph="note_body_ph" placeholder="เขียนบันทึกที่นี่..." class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none resize-y"></textarea>
+<input id="noteTagsInput" type="text" data-i18n-ph="note_tags_ph" placeholder="แท็ก คั่นด้วยจุลภาค" class="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"/>
+<div class="flex items-center gap-3">
+<span class="font-body-sm text-body-sm text-outline" data-i18n="note_color_label">สีไฮไลท์</span>
+<div id="noteColors" class="flex items-center gap-2">
+<button type="button" data-color="none" title="ไม่มีสี" class="w-6 h-6 rounded-full border border-white/30 bg-white/5"></button>
+<button type="button" data-color="yellow" title="เหลือง" class="w-6 h-6 rounded-full" style="background: rgb(250 204 21)"></button>
+<button type="button" data-color="green" title="เขียว" class="w-6 h-6 rounded-full" style="background: rgb(74 222 128)"></button>
+<button type="button" data-color="blue" title="ฟ้า" class="w-6 h-6 rounded-full" style="background: rgb(96 165 250)"></button>
+<button type="button" data-color="pink" title="ชมพู" class="w-6 h-6 rounded-full" style="background: rgb(244 114 182)"></button>
+</div>
+<input id="noteColor" type="hidden" value="none"/>
+</div>
+<div class="flex items-center justify-between gap-2 pt-2">
+<button id="noteDeleteBtn" type="button" class="glass-btn" data-i18n="note_delete">ลบ</button>
+<div class="flex gap-2">
+<button id="noteCancelBtn" type="button" class="glass-btn" data-i18n="login_cancel">ยกเลิก</button>
+<button type="submit" class="glass-btn" data-i18n="note_save">บันทึก</button>
+</div>
+</div>
+<p id="noteMsg" class="text-body-sm text-error min-h-[1rem]"></p>
+</form>
 </div>
 
 <!-- Toast -->
