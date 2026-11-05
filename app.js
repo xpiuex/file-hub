@@ -216,6 +216,7 @@ const viewHome = document.getElementById("viewHome");
 const viewWorkspace = document.getElementById("viewWorkspace");
 const sidebarEl = document.getElementById("sidebar");
 const headerNav = document.getElementById("headerNav");
+const viewNotes = document.getElementById("viewNotes");
 
 let authReady = false;
 let rejecting = false;
@@ -397,32 +398,36 @@ function setSidebarOpen(open) {
 }
 
 function setPage(name) {
-  const ws = name === "workspace";
   document.body.dataset.page = name;
-  viewHome.classList.toggle("hidden", ws);
-  document.body.classList.toggle("home-page", !ws);
-  viewWorkspace.classList.toggle("hidden", !ws);
-  headerNav.classList.toggle("hidden", !ws);
-  document.getElementById("headerUpload").style.display = ws ? "" : "none";
+  viewHome.classList.toggle("hidden", name !== "home");
+  viewWorkspace.classList.toggle("hidden", name !== "workspace");
+  viewNotes.classList.toggle("hidden", name !== "notes");
+  headerNav.classList.toggle("hidden", name !== "workspace");
+  document.getElementById("headerUpload").style.display = name === "workspace" ? "" : "none";
   // เมนูข้างและปุ่มเมนูมือถือแสดงเฉพาะในหน้า room-work
-  sidebarEl.classList.toggle("is-hidden", !ws);
-  document.getElementById("menuBtn").classList.toggle("is-hidden", !ws);
+  sidebarEl.classList.toggle("is-hidden", name !== "workspace");
+  document.getElementById("menuBtn").classList.toggle("is-hidden", name !== "workspace");
   document.querySelectorAll(".sidebar-link").forEach((a) => {
     a.classList.toggle("is-active", a.dataset.route === name);
   });
   setSidebarOpen(false);
-  if (ws) loadAll();
+  if (name === "workspace") loadAll();
+  if (name === "notes") loadNotes();
 }
 
 function routeFromHash() {
   if (!authReady) return;
-  if (location.hash !== "#room-work") return setPage("home");
-  if (fbUser && canDelete) {
-    hideLogin();
-    return setPage("workspace");
+  const h = location.hash;
+  if (h === "#room-work" || h === "#notes") {
+    if (fbUser && canDelete) {
+      hideLogin();
+      return setPage(h === "#notes" ? "notes" : "workspace");
+    }
+    setPage("home");
+    if (!fbUser) showLogin(t("need_login_enter"));
+    return;
   }
   setPage("home");
-  if (!fbUser) showLogin(t("need_login_enter"));
 }
 window.addEventListener("hashchange", routeFromHash);
 
@@ -430,7 +435,7 @@ window.addEventListener("hashchange", routeFromHash);
 document.querySelectorAll("#routeNav [data-route]").forEach((link) => {
   link.addEventListener("click", (e) => {
     e.preventDefault();
-    const target = link.dataset.route === "workspace" ? "#room-work" : "";
+    const target = { workspace: "#room-work", notes: "#notes" }[link.dataset.route] || "";
     if (location.hash !== target) location.hash = target;
     routeFromHash();
   });
@@ -440,6 +445,175 @@ document.getElementById("menuBtn").addEventListener("click", () => {
   setSidebarOpen(!sidebarEl.classList.contains("open"));
 });
 document.getElementById("sidebarBackdrop").addEventListener("click", () => setSidebarOpen(false));
+
+/* ---------- โน้ต: เขียน แท็ก ไฮไลท์ จัดกลุ่มตามหัวข้อ ---------- */
+const NOTE_COLOR_RGB = { yellow: "250 204 21", green: "74 222 128", blue: "96 165 250", pink: "244 114 182" };
+let notesList = [];
+let noteQ = "";
+let noteTag = "";
+let noteColorFilter = "all";
+let editingNote = null;
+
+function noteBg(color) {
+  const rgb = NOTE_COLOR_RGB[color];
+  if (!rgb) return "";
+  return `box-shadow: inset 4px 0 0 rgb(${rgb}); background: linear-gradient(90deg, rgb(${rgb} / 0.18), transparent 60%);`;
+}
+
+async function loadNotes() {
+  const { data, error } = await sb.from("notes").select("*").order("updated_at", { ascending: false });
+  if (error) return showToast(error.message, "error");
+  notesList = data || [];
+  renderNotes();
+}
+
+function renderNotes() {
+  const q = noteQ.toLowerCase();
+
+  // ชิปแท็กทั้งหมดพร้อมจำนวน
+  const counts = {};
+  notesList.forEach((n) => (n.tags || []).forEach((tg) => (counts[tg] = (counts[tg] || 0) + 1)));
+  document.getElementById("noteTagChips").innerHTML = [
+    `<button type="button" data-note-tag="" class="note-chip ${noteTag === "" ? "is-on" : ""}">${esc(t("note_all_tags"))}</button>`,
+    ...Object.keys(counts).sort().map((tg) =>
+      `<button type="button" data-note-tag="${esc(tg)}" class="note-chip ${noteTag === tg ? "is-on" : ""}">#${esc(tg)} <span class="opacity-60">${counts[tg]}</span></button>`),
+  ].join("");
+
+  const list = notesList.filter((n) =>
+    (noteColorFilter === "all" || (n.color || "none") === noteColorFilter) &&
+    (!noteTag || (n.tags || []).includes(noteTag)) &&
+    (!q || [n.title, n.topic, n.body, (n.tags || []).join(" ")].join(" ").toLowerCase().includes(q)));
+
+  // จัดกลุ่มตามหัวข้อหลัก
+  const groups = {};
+  list.forEach((n) => {
+    const k = (n.topic || "").trim() || "__none";
+    (groups[k] = groups[k] || []).push(n);
+  });
+  const keys = Object.keys(groups).sort((x, y) => (x === "__none") - (y === "__none") || x.localeCompare(y));
+
+  document.getElementById("noteList").innerHTML = keys.map((k) => `
+    <section class="space-y-3">
+      <h2 class="font-headline-sm text-headline-sm font-semibold text-on-surface">${k === "__none" ? esc(t("note_no_topic")) : esc(k)}</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        ${groups[k].map(noteCardHtml).join("")}
+      </div>
+    </section>`).join("");
+
+  document.getElementById("noteEmpty").classList.toggle("hidden", list.length > 0);
+}
+
+function noteCardHtml(n) {
+  return `
+  <article data-note-id="${esc(n.id)}" class="glass-card p-4 cursor-pointer space-y-2 transition-transform hover:-translate-y-0.5" style="${noteBg(n.color)}">
+    <h3 class="font-title-md text-body-md font-semibold text-on-surface break-words">${esc(n.title)}</h3>
+    <p class="font-body-sm text-body-sm text-on-surface-variant whitespace-pre-line line-clamp-3">${esc(n.body || "")}</p>
+    <div class="flex flex-wrap gap-1.5">${(n.tags || []).map((tg) => `<span class="note-tag">#${esc(tg)}</span>`).join("")}</div>
+    <div class="font-body-sm text-body-sm text-outline">${esc(t("note_updated"))} ${fmtDate(n.updated_at)}</div>
+  </article>`;
+}
+
+function setNoteColor(c) {
+  document.getElementById("noteColor").value = c;
+  document.querySelectorAll("#noteColors [data-color]").forEach((b) => {
+    b.classList.toggle("ring-2", b.dataset.color === c);
+    b.classList.toggle("ring-white/70", b.dataset.color === c);
+  });
+}
+
+function openNoteEditor(note) {
+  editingNote = note || null;
+  document.getElementById("noteTitle").value = note?.title || "";
+  document.getElementById("noteTopic").value = note?.topic || "";
+  document.getElementById("noteBody").value = note?.body || "";
+  document.getElementById("noteTagsInput").value = (note?.tags || []).join(", ");
+  setNoteColor(note?.color || "none");
+  document.getElementById("noteDeleteBtn").style.display = note ? "" : "none";
+  document.getElementById("noteMsg").textContent = "";
+  const m = document.getElementById("noteModal");
+  m.classList.remove("hidden");
+  m.classList.add("flex");
+  setTimeout(() => document.getElementById("noteTitle").focus(), 0);
+}
+
+function closeNoteEditor() {
+  const m = document.getElementById("noteModal");
+  m.classList.add("hidden");
+  m.classList.remove("flex");
+  editingNote = null;
+}
+
+async function saveNote(e) {
+  e.preventDefault();
+  const msg = document.getElementById("noteMsg");
+  const title = document.getElementById("noteTitle").value.trim();
+  if (!title) {
+    msg.textContent = t("note_title_required");
+    return;
+  }
+  const tags = [...new Set(
+    document.getElementById("noteTagsInput").value.split(",").map((s) => s.trim().replace(/^#/, "")).filter(Boolean)
+  )];
+  const payload = {
+    title,
+    topic: document.getElementById("noteTopic").value.trim() || null,
+    body: document.getElementById("noteBody").value,
+    tags,
+    color: document.getElementById("noteColor").value,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = editingNote
+    ? await sb.from("notes").update(payload).eq("id", editingNote.id)
+    : await sb.from("notes").insert({ ...payload, created_by: fbUser?.email || null });
+  if (error) {
+    msg.textContent = error.message;
+    return;
+  }
+  closeNoteEditor();
+  showToast(t("note_saved"));
+  loadNotes();
+}
+
+async function deleteNote() {
+  if (!editingNote) return;
+  if (!confirm(t("note_confirm_delete"))) return;
+  const { error } = await sb.from("notes").delete().eq("id", editingNote.id);
+  if (error) return showToast(error.message, "error");
+  closeNoteEditor();
+  showToast(t("note_deleted"));
+  loadNotes();
+}
+
+document.getElementById("noteNewBtn").addEventListener("click", () => openNoteEditor(null));
+document.getElementById("noteForm").addEventListener("submit", saveNote);
+document.getElementById("noteCancelBtn").addEventListener("click", closeNoteEditor);
+document.getElementById("noteDeleteBtn").addEventListener("click", deleteNote);
+document.getElementById("noteModal").addEventListener("click", (e) => {
+  if (e.target.id === "noteModal") closeNoteEditor();
+});
+document.getElementById("noteColors").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-color]");
+  if (b) setNoteColor(b.dataset.color);
+});
+document.getElementById("noteSearch").addEventListener("input", (e) => {
+  noteQ = e.target.value.trim();
+  renderNotes();
+});
+document.getElementById("noteColorFilter").addEventListener("change", (e) => {
+  noteColorFilter = e.target.value;
+  renderNotes();
+});
+document.getElementById("noteTagChips").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-note-tag]");
+  if (!b) return;
+  noteTag = b.dataset.noteTag;
+  renderNotes();
+});
+document.getElementById("noteList").addEventListener("click", (e) => {
+  const card = e.target.closest("[data-note-id]");
+  if (!card) return;
+  openNoteEditor(notesList.find((n) => n.id === card.dataset.noteId));
+});
 
 /* ---------- ขนาดพื้นที่ ---------- */
 async function loadUsage() {
@@ -596,7 +770,7 @@ function setView(v) {
   page = 1;
   selected.clear();
   document.getElementById("purgeAllBtn").style.display = v === "trash" ? "" : "none";
-  document.querySelectorAll("#headerNav a").forEach((a) => {
+  document.querySelectorAll("#headerNav a[data-view]").forEach((a) => {
     a.className = a.dataset.view === v ? NAV_ACTIVE : NAV_INACTIVE;
   });
   render();
@@ -1085,11 +1259,10 @@ function init() {
   // ทำให้เมนูด้านบนแสดงบนมือถือด้วย (เลื่อนแนวนอนได้)
   const nav = document.getElementById("headerNav");
   if (nav) nav.className = "flex items-center gap-4 ml-2 whitespace-nowrap";
-  document.querySelectorAll("#headerNav a").forEach((a) => {
+  document.querySelectorAll("#headerNav a[data-view]").forEach((a) => {
     a.addEventListener("click", (e) => {
       e.preventDefault();
-      const v = a.dataset.view;
-      if (v) setView(v);
+      setView(a.dataset.view);
     });
   });
 
@@ -1116,6 +1289,7 @@ window.addEventListener("langchange", () => {
     render();
     loadUsage();
   }
+  if (!viewNotes.classList.contains("hidden")) renderNotes();
 });
 
 document.getElementById("langToggleBtn").addEventListener("click", () => {
