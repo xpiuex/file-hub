@@ -1003,7 +1003,7 @@ function finishTransfer(tr, ok, msg = "") {
 }
 
 // อ่านข้อมูลทีละส่วนพร้อมอัปเดตความคืบหน้า
-async async function readWithProgress(res, tr, fallbackTotal) {
+async function readWithProgress(res, tr, fallbackTotal) {
   const total = Number(res.headers.get("content-length")) || fallbackTotal || 0;
   if (!res.body) {
     const b = await res.blob();
