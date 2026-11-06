@@ -1407,6 +1407,7 @@ function init() {
   updateLangLabel();
   setView("files");
   applyTheme(localStorage.getItem("theme") === "light" ? "light" : "dark");
+  updateProfile();
   routeFromHash();
 }
 
