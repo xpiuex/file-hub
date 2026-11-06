@@ -408,7 +408,7 @@ function setPage(name) {
   document.body.dataset.page = name;
   viewHome.classList.toggle("hidden", name !== "home");
   viewWorkspace.classList.toggle("hidden", name !== "workspace");
-  viewNotes.classList.toggle("hidden", name !== "notes");
+  viewNotes.classList.toggle("hidden", !(ws && view === "notes"));
   headerNav.classList.toggle("hidden", name !== "workspace");
   document.getElementById("headerUpload").style.display = name === "workspace" ? "" : "none";
   // เมนูข้างและปุ่มเมนูมือถือแสดงเฉพาะในหน้า room-work
@@ -419,7 +419,7 @@ function setPage(name) {
   });
   setSidebarOpen(false);
   if (name === "workspace") loadAll();
-  if (name === "notes") loadNotes();
+  if (ws && view === "notes") loadNotes();
 }
 
 function routeFromHash() {
@@ -428,7 +428,9 @@ function routeFromHash() {
   if (h === "#room-work" || h === "#notes") {
     if (fbUser && canDelete) {
       hideLogin();
-      return setPage(h === "#notes" ? "notes" : "workspace");
+      setPage("workspace");
+      if (h === "#notes") setView("notes");
+      return;
     }
     setPage("home");
     if (!fbUser) showLogin(t("need_login_enter"));
@@ -848,6 +850,11 @@ function setView(v) {
   view = v;
   page = 1;
   selected.clear();
+  // หน้า note เป็นแท็บหนึ่งภายในหน้า room-work
+  const isNotes = v === "notes";
+  viewNotes.classList.toggle("hidden", !isNotes);
+  document.getElementById("fileContent").classList.toggle("hidden", isNotes);
+  if (isNotes) loadNotes();
   document.getElementById("purgeAllBtn").style.display = v === "trash" ? "" : "none";
   document.querySelectorAll("#headerNav a[data-view]").forEach((a) => {
     a.className = a.dataset.view === v ? NAV_ACTIVE : NAV_INACTIVE;
