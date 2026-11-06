@@ -964,47 +964,47 @@ function addTransfer(name) {
   return { el, done: false };
 }
 
-function updateTransfer(t, received, total) {
-  const bar = t.el.querySelector("[data-bar]");
+function updateTransfer(tr, received, total) {
+  const bar = tr.el.querySelector("[data-bar]");
   if (total > 0) {
     const pct = Math.min(100, (received / total) * 100);
     bar.style.width = pct + "%";
-    t.el.querySelector("[data-pct]").textContent = pct.toFixed(0) + "%";
-    t.el.querySelector("[data-size]").textContent = `${fmtSize(received)} / ${fmtSize(total)}`;
-    if (received >= total) finishTransfer(t, true);
+    tr.el.querySelector("[data-pct]").textContent = pct.toFixed(0) + "%";
+    tr.el.querySelector("[data-size]").textContent = `${fmtSize(received)} / ${fmtSize(total)}`;
+    if (received >= total) finishTransfer(tr, true);
   } else {
     bar.style.width = "100%";
     bar.classList.add("animate-pulse");
-    t.el.querySelector("[data-pct]").textContent = "—";
-    t.el.querySelector("[data-size]").textContent = fmtSize(received);
+    tr.el.querySelector("[data-pct]").textContent = "—";
+    tr.el.querySelector("[data-size]").textContent = fmtSize(received);
   }
 }
 
-function finishTransfer(t, ok, msg = "") {
-  if (t.done) return;
-  t.done = true;
-  const bar = t.el.querySelector("[data-bar]");
-  const st = t.el.querySelector("[data-status]");
+function finishTransfer(tr, ok, msg = "") {
+  if (tr.done) return;
+  tr.done = true;
+  const bar = tr.el.querySelector("[data-bar]");
+  const st = tr.el.querySelector("[data-status]");
   bar.classList.remove("animate-pulse");
   if (ok) {
     bar.style.width = "100%";
-    t.el.querySelector("[data-pct]").textContent = "100%";
+    tr.el.querySelector("[data-pct]").textContent = "100%";
     st.textContent = t("done");
-    setTimeout(() => t.el.remove(), 1500);
+    setTimeout(() => tr.el.remove(), 1500);
   } else {
     bar.classList.replace("bg-primary-container", "bg-error");
     st.textContent = t("failed") + (msg ? ": " + msg : "");
     st.classList.add("text-error");
-    setTimeout(() => t.el.remove(), 6000);
+    setTimeout(() => tr.el.remove(), 6000);
   }
 }
 
 // อ่านข้อมูลทีละส่วนพร้อมอัปเดตความคืบหน้า
-async function readWithProgress(res, t, fallbackTotal) {
+async async function readWithProgress(res, tr, fallbackTotal) {
   const total = Number(res.headers.get("content-length")) || fallbackTotal || 0;
   if (!res.body) {
     const b = await res.blob();
-    updateTransfer(t, b.size, b.size);
+    updateTransfer(tr, b.size, b.size);
     return b;
   }
   const reader = res.body.getReader();
@@ -1015,7 +1015,7 @@ async function readWithProgress(res, t, fallbackTotal) {
     if (done) break;
     chunks.push(value);
     received += value.length;
-    updateTransfer(t, received, total);
+    updateTransfer(tr, received, total);
   }
   return new Blob(chunks, { type: res.headers.get("content-type") || "application/octet-stream" });
 }
@@ -1073,15 +1073,15 @@ async function importFromUrl() {
   let name = "imported-file";
   try { name = decodeURIComponent(u.pathname.split("/").pop() || "") || name; } catch {}
 
-  const t = addTransfer(name);
+  const tr = addTransfer(name);
   try {
     const res = await fetch(u.href);
     if (!res.ok) throw new Error("HTTP " + res.status);
-    const blob = await readWithProgress(res, t, 0);
-    finishTransfer(t, true);
+    const blob = await readWithProgress(res, tr, 0);
+    finishTransfer(tr, true);
     await uploadFileObject(new File([blob], name, { type: blob.type }));
   } catch (err) {
-    finishTransfer(t, false, err.message);
+    finishTransfer(tr, false, err.message);
   }
 }
 
