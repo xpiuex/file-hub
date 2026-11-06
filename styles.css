@@ -350,7 +350,7 @@ main { min-height: 0; }
 }
 
 /* ---------- แถบด้านบนบนมือถือ: แถวที่ 1 = โลโก้และปุ่ม, แถวที่ 2 = เมนู ---------- */
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   #topNav {
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -395,7 +395,7 @@ body[data-page="home"] #routeNav {
 }
 /* หน้า room-work: กลับไปอยู่ทางซ้ายตามเดิม (ไม่ต้องทำอะไรเพิ่ม) */
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   body[data-page="home"] #routeNav {
     top: auto;
     bottom: 0.45rem;
@@ -405,7 +405,7 @@ body[data-page="home"] #routeNav {
 }
 
 /* ---------- แถบด้านบนบนมือถือ (ปรับใหม่): แถว 1 = โลโก้ + ปุ่ม, แถว 2 = Home / room-work, แถว 3 = เมนูไฟล์ ---------- */
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   #topNav {
     display: grid !important;
     grid-template-columns: auto minmax(0, 1fr);
@@ -520,3 +520,6 @@ body[data-page="home"] #routeNav {
 #topNav {
   border-bottom: 0 !important;
 }
+
+/* note อยู่ในหน้า room-work เท่านั้น */
+body[data-page="home"] #routeNav [data-route="notes"] { display: none !important; }
