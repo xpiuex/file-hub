@@ -311,6 +311,8 @@ document.getElementById("profileLogoutBtn").addEventListener("click", () => logo
 async function signInGoogle() {
   if (!fbAuth) return showLogin(t("firebase_not_set"));
   const provider = new GoogleAuthProvider();
+  // ให้แสดงรายการบัญชี Google ทุกครั้งให้เลือก
+  provider.setCustomParameters({ prompt: "select_account" });
   try {
     await signInWithPopup(fbAuth, provider);
   } catch (e) {
