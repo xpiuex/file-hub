@@ -362,6 +362,7 @@ const authListener = async (user) => {
     }
   }
   routeFromHash();
+  if (user && canDelete && !viewWorkspace.classList.contains("hidden")) loadAll();
 };
 setTimeout(() => {
   if (!authReady) {
@@ -721,6 +722,10 @@ document.getElementById("usageRefreshBtn").addEventListener("click", loadUsage);
 
 /* ---------- โหลดและแสดงข้อมูล ---------- */
 async function loadAll() {
+  // รอให้โทเคนล็อกอินพร้อมก่อน ไม่งั้นคำขอแรกจะถูกส่งแบบไม่มีสิทธิ์และได้รายการว่าง
+  if (fbUser) {
+    try { await withTimeout(fbUser.getIdToken(), 5000); } catch { /* ใช้ค่าเดิม */ }
+  }
   const [p, f, s] = await Promise.all([
     sb.from("projects").select("*").order("created_at", { ascending: false }),
     sb.from("files").select("*").order("uploaded_at", { ascending: false }),
