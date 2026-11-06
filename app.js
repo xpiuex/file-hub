@@ -158,10 +158,12 @@ const divider = `<div class="h-px bg-outline-variant my-1"></div>`;
 
 function rowMenuHtml(f) {
   if (view === "trash") {
-    return item("restore", "restore_from_trash", t("menu_restore"), f.id) +
+    return item("preview", "visibility", t("menu_view"), f.id) +
+           item("restore", "restore_from_trash", t("menu_restore"), f.id) +
            item("purge", "delete_forever", t("menu_purge"), f.id, "text-error");
   }
-  return item("download", "download", t("menu_download"), f.id) +
+  return item("preview", "visibility", t("menu_view"), f.id) +
+         item("download", "download", t("menu_download"), f.id) +
          item("share", "link", t("menu_share"), f.id) +
          item("rename", "edit", t("menu_rename"), f.id) +
          divider +
@@ -482,7 +484,7 @@ function noteRowHtml(n) {
     </div>
     <div class="hidden md:flex flex-wrap gap-1">${tags}</div>
     <div class="hidden md:block font-body-sm text-body-sm text-outline">${fmtDate(n.updated_at)}</div>
-    <div class="flex justify-end">${dot}</div>
+    <div class="flex justify-end items-center gap-2">${dot}<span class="text-label-sm font-label-sm text-primary">View</span></div>
   </div>`;
 }
 
@@ -523,6 +525,49 @@ function renderNotes() {
     </div>`).join("");
   document.getElementById("noteEmpty").classList.toggle("hidden", list.length > 0);
 }
+
+/* ---------- ดูโน้ต (อ่านอย่างเดียว) ---------- */
+let viewingNote = null;
+
+function openNoteView(n) {
+  if (!n) return;
+  viewingNote = n;
+  const c = n.color && n.color !== "none" ? NOTE_COLOR_RGB[n.color] : null;
+  document.getElementById("noteViewBody").innerHTML = `
+    <div class="flex items-start justify-between gap-3">
+      <h2 class="font-headline-md text-headline-md font-semibold text-on-surface break-words">${esc(n.title || "")}</h2>
+      ${c ? `<span class="shrink-0 w-3 h-3 rounded-full mt-2" style="background:rgb(${c})"></span>` : ""}
+    </div>
+    <div class="flex flex-wrap gap-2 text-body-sm text-outline">
+      ${n.topic ? `<span>${esc(n.topic)}</span>` : ""}
+      <span>${fmtDate(n.updated_at)}</span>
+      ${n.created_by ? `<span>· ${esc(n.created_by)}</span>` : ""}
+    </div>
+    <div class="flex flex-wrap gap-1.5">${(n.tags || []).map((tg) => `<span class="note-tag">#${esc(tg)}</span>`).join("")}</div>
+    <div class="whitespace-pre-wrap font-body-md text-body-md text-on-surface leading-relaxed">${esc(n.body || "")}</div>`;
+  const canEdit = (n.created_by || "").toLowerCase() === (fbUser?.email || "").toLowerCase() || currentRole === "admin";
+  document.getElementById("noteViewEditBtn").style.display = canEdit ? "" : "none";
+  const m = document.getElementById("noteViewModal");
+  m.classList.remove("hidden");
+  m.classList.add("flex");
+}
+
+function closeNoteView() {
+  const m = document.getElementById("noteViewModal");
+  m.classList.add("hidden");
+  m.classList.remove("flex");
+  viewingNote = null;
+}
+
+document.getElementById("noteViewCloseBtn").addEventListener("click", closeNoteView);
+document.getElementById("noteViewEditBtn").addEventListener("click", () => {
+  const n = viewingNote;
+  closeNoteView();
+  openNoteEditor(n);
+});
+document.getElementById("noteViewModal").addEventListener("click", (e) => {
+  if (e.target.id === "noteViewModal") closeNoteView();
+});
 
 function setNoteColor(c) {
   document.getElementById("noteColor").value = c;
@@ -627,7 +672,7 @@ document.getElementById("noteList").addEventListener("click", (e) => {
   if (add) return openNoteEditor(null, add.dataset.noteNewIn);
   const card = e.target.closest("[data-note-id]");
   if (!card) return;
-  openNoteEditor(notesList.find((n) => n.id === card.dataset.noteId));
+  openNoteView(notesList.find((n) => n.id === card.dataset.noteId));
 });
 
 /* ---------- ขนาดพื้นที่ ---------- */
@@ -715,7 +760,7 @@ function rowHtml(f) {
           <span class="material-symbols-outlined !text-[18px]">${info.icon}</span>
         </div>
         <div class="flex flex-col min-w-0">
-          <span class="font-medium text-on-surface truncate group-hover:text-primary transition-colors">${esc(f.file_name)}</span>
+          <span class="font-medium text-on-surface truncate group-hover:text-primary transition-colors cursor-pointer" data-act="preview" data-id="${id}">${esc(f.file_name)}</span>
           <span class="font-body-sm text-body-sm text-outline truncate">${esc(info.label)} · ${esc(t("uploaded_by"))} ${esc(f.uploaded_by_name || f.uploaded_by_email || "-")}</span>
         </div>
       </div>
@@ -851,6 +896,9 @@ document.addEventListener("click", async (e) => {
       if (openPop) openPop.innerHTML = colsMenuHtml();
       applyColumns();
       return;
+    case "preview":
+      closePop();
+      return previewFile(f);
     case "purge-all":
       closePop();
       return requireAdmin(purgeAllTrash);
@@ -861,6 +909,7 @@ document.addEventListener("click", async (e) => {
 
   closePop();
   if (!f) return;
+  if (act === "preview") return previewFile(f);
   if (act === "download") return downloadFile(f);
   if (act === "share") return shareFile(f);
   if (act === "rename") return requireAdmin(() => renameFile(f));
@@ -1099,6 +1148,55 @@ async function purgeAllTrash() {
   showToast(t("purged_all"));
   loadAll();
 }
+
+/* ---------- ดูตัวอย่างไฟล์ ---------- */
+let previewed = null;
+
+async function previewFile(f) {
+  const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(f.storage_path, 600);
+  if (error) return showToast(error.message, "error");
+  const url = data.signedUrl;
+  const ext = (f.file_name.split(".").pop() || "").toLowerCase();
+  let html;
+  if (["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"].includes(ext)) {
+    html = `<img src="${url}" alt="" class="mx-auto max-h-[70vh] max-w-full rounded-lg"/>`;
+  } else if (ext === "pdf") {
+    html = `<iframe src="${url}" class="w-full h-[70vh] rounded-lg bg-white"></iframe>`;
+  } else if (["mp4", "webm", "mov"].includes(ext)) {
+    html = `<video src="${url}" controls class="w-full max-h-[70vh] rounded-lg"></video>`;
+  } else if (["txt", "md", "csv", "json", "js", "html", "css"].includes(ext) && f.file_size < 2 * 1024 * 1024) {
+    try {
+      const txt = await (await fetch(url)).text();
+      html = `<pre class="whitespace-pre-wrap font-code-inline text-code-inline text-on-surface">${esc(txt)}</pre>`;
+    } catch {
+      html = `<div class="text-center text-outline py-12">${esc(t("preview_unsupported"))}</div>`;
+    }
+  } else {
+    html = `<div class="text-center text-outline py-12">${esc(t("preview_unsupported"))}</div>`;
+  }
+  previewed = f;
+  document.getElementById("previewTitle").textContent = f.file_name;
+  document.getElementById("previewBody").innerHTML = html;
+  const m = document.getElementById("previewModal");
+  m.classList.remove("hidden");
+  m.classList.add("flex");
+}
+
+function closePreview() {
+  const m = document.getElementById("previewModal");
+  m.classList.add("hidden");
+  m.classList.remove("flex");
+  document.getElementById("previewBody").innerHTML = "";
+  previewed = null;
+}
+
+document.getElementById("previewCloseBtn").addEventListener("click", closePreview);
+document.getElementById("previewModal").addEventListener("click", (e) => {
+  if (e.target.id === "previewModal") closePreview();
+});
+document.getElementById("previewDownloadBtn").addEventListener("click", () => {
+  if (previewed) downloadFile(previewed);
+});
 
 /* ---------- อัปโหลด (ไม่ต้องล็อกอิน) ---------- */
 async function getDefaultProjectId() {
