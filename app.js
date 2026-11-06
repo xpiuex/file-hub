@@ -430,6 +430,7 @@ function routeFromHash() {
       hideLogin();
       setPage("workspace");
       if (h === "#notes") setView("notes");
+      else if (view === "notes") setView("files");
       return;
     }
     setPage("home");
@@ -855,6 +856,7 @@ function setView(v) {
   viewNotes.classList.toggle("hidden", !isNotes);
   document.getElementById("fileContent").classList.toggle("hidden", isNotes);
   if (isNotes) loadNotes();
+  document.querySelectorAll('#routeNav [data-route="notes"]').forEach((el) => el.classList.toggle("is-active", isNotes));
   document.getElementById("purgeAllBtn").style.display = v === "trash" ? "" : "none";
   document.querySelectorAll("#headerNav a[data-view]").forEach((a) => {
     a.className = a.dataset.view === v ? NAV_ACTIVE : NAV_INACTIVE;
