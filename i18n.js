@@ -3,6 +3,8 @@
   var DICT = {
     th: {
       app_title: "AskFile - ไฟล์และทรัพยากร",
+      menu_view: "ดู", preview_close: "ปิด", preview_download: "ดาวน์โหลด", preview_unsupported: "ไม่รองรับการแสดงตัวอย่างไฟล์ประเภทนี้",
+      note_view_edit: "แก้ไข", note_view_close: "ปิด",
       nav_notes: "โน้ต", notes_title: "โน้ต", notes_desc: "จดบันทึก จัดหมวดด้วยหัวข้อและแท็ก และไฮไลท์สิ่งสำคัญ",
       notes_new: "+ โน้ตใหม่", notes_search_ph: "ค้นหาโน้ต...", notes_empty: "ยังไม่มีโน้ต กด + โน้ตใหม่ เพื่อเริ่มเขียน",
       notes_no_topic: "ไม่มีหัวข้อ", notes_add_here: "เพิ่มโน้ตในหัวข้อนี้", notes_untitled: "ไม่มีหัวข้อโน้ต",
@@ -77,6 +79,8 @@
     },
     en: {
       app_title: "AskFile - Files & Assets",
+      menu_view: "View", preview_close: "Close", preview_download: "Download", preview_unsupported: "Preview is not supported for this file type",
+      note_view_edit: "Edit", note_view_close: "Close",
       nav_notes: "Notes", notes_title: "Notes", notes_desc: "Write notes, group them by topic and tags, and highlight what matters",
       notes_new: "+ New note", notes_search_ph: "Search notes...", notes_empty: "No notes yet. Click + New note to start writing.",
       notes_no_topic: "No topic", notes_add_here: "Add note here", notes_untitled: "Untitled",
