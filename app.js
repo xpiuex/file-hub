@@ -45,6 +45,9 @@ let fbUser = null;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
   accessToken: async () => (fbUser ? fbUser.getIdToken() : null),
 });
+// ไว้ตรวจปัญหาในคอนโซลของเบราว์เซอร์เท่านั้น
+window.sb = sb;
+window.fbAuth = fbAuth;
 
 let projects = [];
 let files = [];
