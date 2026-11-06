@@ -547,6 +547,7 @@ function openNoteView(n) {
     <div class="whitespace-pre-wrap font-body-md text-body-md text-on-surface leading-relaxed">${esc(n.body || "")}</div>`;
   const canEdit = (n.created_by || "").toLowerCase() === (fbUser?.email || "").toLowerCase() || currentRole === "admin";
   document.getElementById("noteViewEditBtn").style.display = canEdit ? "" : "none";
+  document.getElementById("noteViewDeleteBtn").style.display = canEdit ? "" : "none";
   const m = document.getElementById("noteViewModal");
   m.classList.remove("hidden");
   m.classList.add("flex");
@@ -560,6 +561,19 @@ function closeNoteView() {
 }
 
 document.getElementById("noteViewCloseBtn").addEventListener("click", closeNoteView);
+
+async function deleteViewingNote() {
+  const n = viewingNote;
+  if (!n) return;
+  if (!confirm(t("note_confirm_delete"))) return;
+  const { data, error } = await sb.from("notes").delete().eq("id", n.id).select("id");
+  if (error) return showToast(error.message, "error");
+  if (!data || !data.length) return showToast(t("notes_no_perm"), "error");
+  closeNoteView();
+  showToast(t("note_deleted"));
+  loadNotes();
+}
+document.getElementById("noteViewDeleteBtn").addEventListener("click", deleteViewingNote);
 document.getElementById("noteViewEditBtn").addEventListener("click", () => {
   const n = viewingNote;
   closeNoteView();
