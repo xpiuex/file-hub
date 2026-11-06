@@ -1037,19 +1037,28 @@ async function downloadFile(f) {
     .createSignedUrl(f.storage_path, DOWNLOAD_LINK_SECONDS);
   if (error) return showToast(error.message, "error");
 
-  const t = addTransfer(f.file_name);
+  const tr = addTransfer(f.file_name);
   try {
+    // ดาวน์โหลดพร้อมแสดงความคืบหน้า
     const res = await fetch(data.signedUrl);
     if (!res.ok) throw new Error("HTTP " + res.status);
-    const blob = await readWithProgress(res, t, Number(f.file_size) || 0);
+    const blob = await readWithProgress(res, tr, Number(f.file_size) || 0);
     saveBlob(blob, f.file_name);
-    finishTransfer(t, true);
-    logActivity(t("act_download", { name: f.file_name }));
   } catch (err) {
-    // ถ้าอ่านแบบมีความคืบหน้าไม่ได้ (เช่น CORS) ให้เปิดลิงก์ตรงแทน
-    finishTransfer(t, false, err.message);
-    window.open(data.signedUrl, "_blank");
+    // ถ้าอ่านแบบมีความคืบหน้าไม่ได้ ดาวน์โหลดผ่าน iframe ที่ซ่อนไว้
+    // เพื่อไม่ให้เปิดแท็บใหม่หรือเปลี่ยนหน้า
+    startHiddenDownload(data.signedUrl);
   }
+  finishTransfer(tr, true);
+  logActivity(t("act_download", { name: f.file_name }));
+}
+
+function startHiddenDownload(url) {
+  const frame = document.createElement("iframe");
+  frame.style.display = "none";
+  frame.src = url;
+  document.body.appendChild(frame);
+  setTimeout(() => frame.remove(), 60000);
 }
 
 /* ---------- นำเข้าจาก URL ---------- */
