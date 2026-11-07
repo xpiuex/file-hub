@@ -724,7 +724,7 @@ document.getElementById("usageRefreshBtn").addEventListener("click", loadUsage);
 async function loadAll(attempt = 0) {
   // รอให้โทเคนล็อกอินพร้อมก่อน ไม่งั้นคำขอแรกจะถูกส่งแบบไม่มีสิทธิ์และได้รายการว่าง
   if (fbUser) {
-    try { await withTimeout(fbUser.getIdToken(), 5000); } catch { /* ใช้ค่าเดิม */ }
+    try { await withTimeout(fbUser.getIdToken(), 5000); } catch (err) { console.warn("รับโทเคนไม่สำเร็จ:", err.message); }
   }
   const [p, f, s] = await Promise.all([
     sb.from("projects").select("*").order("created_at", { ascending: false }),
@@ -1096,7 +1096,7 @@ async function importFromUrl() {
   if (u.protocol !== "https:") return showToast(t("https_only"), "error");
 
   let name = "imported-file";
-  try { name = decodeURIComponent(u.pathname.split("/").pop() || "") || name; } catch {}
+  try { name = decodeURIComponent(u.pathname.split("/").pop() || "") || name; } catch (err) { console.warn("ชื่อไฟล์ไม่ถูกต้อง:", err.message); }
 
   const tr = addTransfer(name);
   try {
