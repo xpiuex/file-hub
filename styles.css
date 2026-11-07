@@ -1,4 +1,4 @@
-.material-symbols-outlined {
+    .material-symbols-outlined {
       font-size: 18px;
       line-height: 1;
       display: inline-block;
@@ -486,40 +486,8 @@ body[data-page="home"] #routeNav {
   }
 }
 
-/* ---------- โน้ต: ชิปแท็กและป้ายแท็ก ---------- */
-.note-chip {
-  padding: 0.3rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.8125rem;
-  border: 1px solid rgb(255 255 255 / 0.18);
-  background: rgb(255 255 255 / 0.05);
-  color: rgb(var(--c-on-surface-variant));
-  cursor: pointer;
-}
-.note-chip.is-on {
-  color: rgb(var(--c-on-surface));
-  background: linear-gradient(135deg, rgb(var(--c-primary) / 0.45), rgb(var(--c-tertiary) / 0.22));
-  border-color: rgb(var(--c-primary) / 0.6);
-}
-.note-tag {
-  padding: 0.1rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  background: rgb(255 255 255 / 0.1);
-  border: 1px solid rgb(255 255 255 / 0.15);
-  color: rgb(var(--c-on-surface-variant));
-}
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
 /* ---------- ลบเส้นขอบใต้แถบด้านบน ---------- */
 #topNav {
   border-bottom: 0 !important;
 }
 
-/* note อยู่ในหน้า room-work เท่านั้น */
-body[data-page="home"] #routeNav [data-route="notes"] { display: none !important; }
