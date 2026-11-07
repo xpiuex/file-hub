@@ -721,7 +721,7 @@ async function loadUsage() {
 document.getElementById("usageRefreshBtn").addEventListener("click", loadUsage);
 
 /* ---------- โหลดและแสดงข้อมูล ---------- */
-async function loadAll() {
+async function loadAll(attempt = 0) {
   // รอให้โทเคนล็อกอินพร้อมก่อน ไม่งั้นคำขอแรกจะถูกส่งแบบไม่มีสิทธิ์และได้รายการว่าง
   if (fbUser) {
     try { await withTimeout(fbUser.getIdToken(), 5000); } catch { /* ใช้ค่าเดิม */ }
@@ -732,6 +732,12 @@ async function loadAll() {
     sb.from("share_links").select("file_id, expires_at").gt("expires_at", new Date().toISOString()),
   ]);
   const err = p.error || f.error;
+  // ครั้งแรกอาจได้ผลว่างหรือผิดพลาดขณะโทเคนยังไม่พร้อม จึงลองใหม่อัตโนมัติ
+  const emptyFirst = !err && attempt === 0 && !!fbUser && (f.data || []).length === 0;
+  if ((err || emptyFirst) && attempt < 2) {
+    setTimeout(() => loadAll(attempt + 1), 1200);
+    return;
+  }
   if (err) return showToast(err.message, "error");
   if (s.error) console.warn("Share list failed (SQL not run?):", s.error.message);
 
@@ -1372,7 +1378,7 @@ document.getElementById("lastPage").addEventListener("click", () => {
   render();
 });
 
-document.getElementById("refreshBtn").addEventListener("click", loadAll);
+document.getElementById("refreshBtn").addEventListener("click", () => loadAll());
 
 function applyTheme(name) {
   window.__setTheme(name);
