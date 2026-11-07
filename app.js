@@ -224,7 +224,6 @@ const viewHome = document.getElementById("viewHome");
 const viewWorkspace = document.getElementById("viewWorkspace");
 const sidebarEl = document.getElementById("sidebar");
 const headerNav = document.getElementById("headerNav");
-const viewNotes = document.getElementById("viewNotes");
 
 let authReady = false;
 let rejecting = false;
@@ -413,7 +412,6 @@ function setPage(name) {
   document.body.dataset.page = name;
   viewHome.classList.toggle("hidden", name !== "home");
   viewWorkspace.classList.toggle("hidden", name !== "workspace");
-  viewNotes.classList.toggle("hidden", !(ws && view === "notes"));
   headerNav.classList.toggle("hidden", name !== "workspace");
   document.getElementById("headerUpload").style.display = name === "workspace" ? "" : "none";
   // เมนูข้างและปุ่มเมนูมือถือแสดงเฉพาะในหน้า room-work
@@ -424,18 +422,15 @@ function setPage(name) {
   });
   setSidebarOpen(false);
   if (name === "workspace") loadAll();
-  if (ws && view === "notes") loadNotes();
 }
 
 function routeFromHash() {
   if (!authReady) return;
   const h = location.hash;
-  if (h === "#room-work" || h === "#notes") {
+  if (h === "#room-work") {
     if (fbUser && canDelete) {
       hideLogin();
       setPage("workspace");
-      if (h === "#notes") setView("notes");
-      else if (view === "notes") setView("files");
       return;
     }
     setPage("home");
@@ -450,7 +445,7 @@ window.addEventListener("hashchange", routeFromHash);
 document.querySelectorAll("#routeNav [data-route]").forEach((link) => {
   link.addEventListener("click", (e) => {
     e.preventDefault();
-    const target = { workspace: "#room-work", notes: "#notes" }[link.dataset.route] || "";
+    const target = { workspace: "#room-work" }[link.dataset.route] || "";
     if (location.hash !== target) location.hash = target;
     routeFromHash();
   });
@@ -460,247 +455,6 @@ document.getElementById("menuBtn").addEventListener("click", () => {
   setSidebarOpen(!sidebarEl.classList.contains("open"));
 });
 document.getElementById("sidebarBackdrop").addEventListener("click", () => setSidebarOpen(false));
-
-/* ---------- โน้ต: เขียน แท็ก ไฮไลท์ จัดกลุ่มตามหัวข้อ ---------- */
-const NOTE_COLOR_RGB = { yellow: "250 204 21", green: "74 222 128", blue: "96 165 250", pink: "244 114 182" };
-let notesList = [];
-let noteQ = "";
-let noteTag = "";
-let noteColorFilter = "all";
-let editingNote = null;
-
-function noteBg(color) {
-  const rgb = NOTE_COLOR_RGB[color];
-  if (!rgb) return "";
-  return `box-shadow: inset 4px 0 0 rgb(${rgb}); background: linear-gradient(90deg, rgb(${rgb} / 0.18), transparent 60%);`;
-}
-
-async function loadNotes() {
-  const { data, error } = await sb.from("notes").select("*").order("updated_at", { ascending: false });
-  if (error) return showToast(error.message, "error");
-  notesList = data || [];
-  renderNotes();
-}
-
-function noteRowHtml(n) {
-  const c = n.color && n.color !== "none" ? NOTE_COLOR_RGB[n.color] : null;
-  const dot = c
-    ? `<span class="inline-block w-2.5 h-2.5 rounded-full" style="background:rgb(${c})"></span>`
-    : `<span class="inline-block w-2.5 h-2.5 rounded-full border border-white/25"></span>`;
-  const tags = (n.tags || []).map((tg) => `<span class="note-tag">#${esc(tg)}</span>`).join("");
-  const bg = c ? `background:linear-gradient(90deg, rgb(${c} / 0.14), transparent 70%);border-left:3px solid rgb(${c})` : "";
-  return `
-  <div data-note-id="${esc(n.id)}" class="grid grid-cols-[1fr_auto] md:grid-cols-[2fr_1fr_1fr_auto] gap-4 items-center px-4 py-3 border-b border-white/10 hover:bg-white/5 cursor-pointer" style="${bg}">
-    <div class="min-w-0">
-      <div class="font-label-md text-label-md text-on-surface truncate">${esc(n.title || "")}</div>
-      <div class="font-body-sm text-body-sm text-outline truncate">${esc((n.body || "").slice(0, 90))}</div>
-    </div>
-    <div class="hidden md:flex flex-wrap gap-1">${tags}</div>
-    <div class="hidden md:block font-body-sm text-body-sm text-outline">${fmtDate(n.updated_at)}</div>
-    <div class="flex justify-end items-center gap-2">${dot}<span class="text-label-sm font-label-sm text-primary">View</span></div>
-  </div>`;
-}
-
-function renderNotes() {
-  const q = noteQ.toLowerCase();
-  const counts = {};
-  notesList.forEach((n) => (n.tags || []).forEach((tg) => (counts[tg] = (counts[tg] || 0) + 1)));
-  document.getElementById("noteTagChips").innerHTML = [
-    `<button type="button" data-note-tag="" class="note-chip ${noteTag === "" ? "is-on" : ""}">${esc(t("note_all_tags"))}</button>`,
-    ...Object.keys(counts).sort().map((tg) =>
-      `<button type="button" data-note-tag="${esc(tg)}" class="note-chip ${noteTag === tg ? "is-on" : ""}">#${esc(tg)} <span class="opacity-60">${counts[tg]}</span></button>`),
-  ].join("");
-
-  document.querySelectorAll("#noteColorPills [data-note-color]").forEach((b) => {
-    const on = b.dataset.noteColor === noteColorFilter;
-    b.className = "h-8 px-3 rounded-full text-label-sm font-label-sm border transition-colors " + (on
-      ? "border-primary/60 bg-primary-container/30 text-on-surface"
-      : "border-white/15 text-on-surface-variant hover:text-on-surface");
-  });
-
-  const list = notesList.filter((n) =>
-    (noteColorFilter === "all" || (n.color || "none") === noteColorFilter) &&
-    (!noteTag || (n.tags || []).includes(noteTag)) &&
-    (!q || [n.title, n.body, n.topic, ...(n.tags || [])].join(" ").toLowerCase().includes(q)));
-
-  const groups = {};
-  list.forEach((n) => { const k = n.topic || "__none"; (groups[k] = groups[k] || []).push(n); });
-  const keys = Object.keys(groups).sort((x, y) => (x === "__none") - (y === "__none") || x.localeCompare(y));
-
-  document.getElementById("noteList").innerHTML = keys.map((k) => `
-    <div>
-      <div class="flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/10">
-        <span class="font-label-md text-label-md font-semibold text-on-surface">${k === "__none" ? esc(t("note_no_topic")) : esc(k)}
-          <span class="text-outline font-body-sm">(${groups[k].length})</span></span>
-        <button type="button" data-note-new-in="${k === "__none" ? "" : esc(k)}" class="text-label-sm font-label-sm text-primary hover:underline">+ ${esc(t("note_new"))}</button>
-      </div>
-      ${groups[k].map(noteRowHtml).join("")}
-    </div>`).join("");
-  document.getElementById("noteEmpty").classList.toggle("hidden", list.length > 0);
-}
-
-/* ---------- ดูโน้ต (อ่านอย่างเดียว) ---------- */
-let viewingNote = null;
-
-function openNoteView(n) {
-  if (!n) return;
-  viewingNote = n;
-  const c = n.color && n.color !== "none" ? NOTE_COLOR_RGB[n.color] : null;
-  document.getElementById("noteViewBody").innerHTML = `
-    <div class="flex items-start justify-between gap-3">
-      <h2 class="font-headline-md text-headline-md font-semibold text-on-surface break-words">${esc(n.title || "")}</h2>
-      ${c ? `<span class="shrink-0 w-3 h-3 rounded-full mt-2" style="background:rgb(${c})"></span>` : ""}
-    </div>
-    <div class="flex flex-wrap gap-2 text-body-sm text-outline">
-      ${n.topic ? `<span>${esc(n.topic)}</span>` : ""}
-      <span>${fmtDate(n.updated_at)}</span>
-      ${n.created_by ? `<span>· ${esc(n.created_by)}</span>` : ""}
-    </div>
-    <div class="flex flex-wrap gap-1.5">${(n.tags || []).map((tg) => `<span class="note-tag">#${esc(tg)}</span>`).join("")}</div>
-    <div class="whitespace-pre-wrap font-body-md text-body-md text-on-surface leading-relaxed">${esc(n.body || "")}</div>`;
-  const canEdit = (n.created_by || "").toLowerCase() === (fbUser?.email || "").toLowerCase() || currentRole === "admin";
-  document.getElementById("noteViewEditBtn").style.display = canEdit ? "" : "none";
-  document.getElementById("noteViewDeleteBtn").style.display = canEdit ? "" : "none";
-  const m = document.getElementById("noteViewModal");
-  m.classList.remove("hidden");
-  m.classList.add("flex");
-}
-
-function closeNoteView() {
-  const m = document.getElementById("noteViewModal");
-  m.classList.add("hidden");
-  m.classList.remove("flex");
-  viewingNote = null;
-}
-
-document.getElementById("noteViewCloseBtn").addEventListener("click", closeNoteView);
-
-async function deleteViewingNote() {
-  const n = viewingNote;
-  if (!n) return;
-  if (!confirm(t("note_confirm_delete"))) return;
-  const { data, error } = await sb.from("notes").delete().eq("id", n.id).select("id");
-  if (error) return showToast(error.message, "error");
-  if (!data || !data.length) return showToast(t("notes_no_perm"), "error");
-  closeNoteView();
-  showToast(t("note_deleted"));
-  loadNotes();
-}
-document.getElementById("noteViewDeleteBtn").addEventListener("click", deleteViewingNote);
-document.getElementById("noteViewEditBtn").addEventListener("click", () => {
-  const n = viewingNote;
-  closeNoteView();
-  openNoteEditor(n);
-});
-document.getElementById("noteViewModal").addEventListener("click", (e) => {
-  if (e.target.id === "noteViewModal") closeNoteView();
-});
-
-function setNoteColor(c) {
-  document.getElementById("noteColor").value = c;
-  document.querySelectorAll("#noteColors [data-color]").forEach((b) => {
-    b.classList.toggle("ring-2", b.dataset.color === c);
-    b.classList.toggle("ring-white/70", b.dataset.color === c);
-  });
-}
-
-function openNoteEditor(note, topic = "") {
-  editingNote = note || null;
-  document.getElementById("noteTitle").value = note?.title || "";
-  document.getElementById("noteTopic").value = note?.topic || topic || "";
-  document.getElementById("noteBody").value = note?.body || "";
-  document.getElementById("noteTagsInput").value = (note?.tags || []).join(", ");
-  setNoteColor(note?.color || "none");
-  document.getElementById("noteDeleteBtn").style.display = note ? "" : "none";
-  document.getElementById("noteMsg").textContent = "";
-  const m = document.getElementById("noteModal");
-  m.classList.remove("hidden");
-  m.classList.add("flex");
-  setTimeout(() => document.getElementById("noteTitle").focus(), 0);
-}
-
-function closeNoteEditor() {
-  const m = document.getElementById("noteModal");
-  m.classList.add("hidden");
-  m.classList.remove("flex");
-  editingNote = null;
-}
-
-async function saveNote(e) {
-  e.preventDefault();
-  const msg = document.getElementById("noteMsg");
-  const title = document.getElementById("noteTitle").value.trim();
-  if (!title) {
-    msg.textContent = t("note_title_required");
-    return;
-  }
-  const tags = [...new Set(
-    document.getElementById("noteTagsInput").value.split(",").map((s) => s.trim().replace(/^#/, "")).filter(Boolean)
-  )];
-  const payload = {
-    title,
-    topic: document.getElementById("noteTopic").value.trim() || null,
-    body: document.getElementById("noteBody").value,
-    tags,
-    color: document.getElementById("noteColor").value,
-    updated_at: new Date().toISOString(),
-  };
-  const { error } = editingNote
-    ? await sb.from("notes").update(payload).eq("id", editingNote.id)
-    : await sb.from("notes").insert({ ...payload, created_by: fbUser?.email || null });
-  if (error) {
-    msg.textContent = error.message;
-    return;
-  }
-  closeNoteEditor();
-  showToast(t("note_saved"));
-  loadNotes();
-}
-
-async function deleteNote() {
-  if (!editingNote) return;
-  if (!confirm(t("note_confirm_delete"))) return;
-  const { error } = await sb.from("notes").delete().eq("id", editingNote.id);
-  if (error) return showToast(error.message, "error");
-  closeNoteEditor();
-  showToast(t("note_deleted"));
-  loadNotes();
-}
-
-document.getElementById("noteNewBtn").addEventListener("click", () => openNoteEditor(null));
-document.getElementById("noteForm").addEventListener("submit", saveNote);
-document.getElementById("noteCancelBtn").addEventListener("click", closeNoteEditor);
-document.getElementById("noteDeleteBtn").addEventListener("click", deleteNote);
-document.getElementById("noteModal").addEventListener("click", (e) => {
-  if (e.target.id === "noteModal") closeNoteEditor();
-});
-document.getElementById("noteColors").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-color]");
-  if (b) setNoteColor(b.dataset.color);
-});
-document.getElementById("noteSearch").addEventListener("input", (e) => {
-  noteQ = e.target.value.trim();
-  renderNotes();
-});
-document.getElementById("noteColorPills").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-note-color]");
-  if (!b) return;
-  noteColorFilter = b.dataset.noteColor;
-  renderNotes();
-});
-document.getElementById("noteTagChips").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-note-tag]");
-  if (!b) return;
-  noteTag = b.dataset.noteTag;
-  renderNotes();
-});
-document.getElementById("noteList").addEventListener("click", (e) => {
-  const add = e.target.closest("[data-note-new-in]");
-  if (add) return openNoteEditor(null, add.dataset.noteNewIn);
-  const card = e.target.closest("[data-note-id]");
-  if (!card) return;
-  openNoteView(notesList.find((n) => n.id === card.dataset.noteId));
-});
 
 /* ---------- ขนาดพื้นที่ ---------- */
 async function loadUsage() {
@@ -868,12 +622,6 @@ function setView(v) {
   view = v;
   page = 1;
   selected.clear();
-  // หน้า note เป็นแท็บหนึ่งภายในหน้า room-work
-  const isNotes = v === "notes";
-  viewNotes.classList.toggle("hidden", !isNotes);
-  document.getElementById("fileContent").classList.toggle("hidden", isNotes);
-  if (isNotes) loadNotes();
-  document.querySelectorAll('#routeNav [data-route="notes"]').forEach((el) => el.classList.toggle("is-active", isNotes));
   document.getElementById("purgeAllBtn").style.display = v === "trash" ? "" : "none";
   document.querySelectorAll("#headerNav a[data-view]").forEach((a) => {
     a.className = a.dataset.view === v ? NAV_ACTIVE : NAV_INACTIVE;
@@ -1457,7 +1205,6 @@ window.addEventListener("langchange", () => {
     render();
     loadUsage();
   }
-  if (!viewNotes.classList.contains("hidden")) renderNotes();
 });
 
 document.getElementById("langToggleBtn").addEventListener("click", () => {
