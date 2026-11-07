@@ -40,6 +40,9 @@ try {
   console.error("Firebase init failed:", err);
 }
 let fbUser = null;
+// สัญญาณว่าระบบล็อกอินรู้สถานะแล้ว ใช้ให้การโหลดข้อมูลรอจนกว่าจะพร้อม
+let resolveAuth;
+const authPromise = new Promise((r) => (resolveAuth = r));
 
 // ส่ง ID token ของ Firebase ให้ Supabase ทุกคำขอ เพื่อให้ RLS เห็นอีเมลที่ล็อกอิน
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -337,6 +340,7 @@ async function requireAdmin(action) {
 const authListener = async (user) => {
   fbUser = user;
   authReady = true;
+  resolveAuth();
   if (!user && rejecting) {
     rejecting = false;
     authReady = true;
@@ -722,6 +726,8 @@ document.getElementById("usageRefreshBtn").addEventListener("click", loadUsage);
 
 /* ---------- โหลดและแสดงข้อมูล ---------- */
 async function loadAll(attempt = 0) {
+  // รอให้ระบบรู้สถานะการล็อกอินก่อน (สูงสุด 6 วินาที) แล้วค่อยขอข้อมูล
+  await Promise.race([authPromise, new Promise((r) => setTimeout(r, 6000))]);
   // รอให้โทเคนล็อกอินพร้อมก่อน ไม่งั้นคำขอแรกจะถูกส่งแบบไม่มีสิทธิ์และได้รายการว่าง
   if (fbUser) {
     try { await withTimeout(fbUser.getIdToken(), 5000); } catch (err) { console.warn("รับโทเคนไม่สำเร็จ:", err.message); }
