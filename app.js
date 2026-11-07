@@ -1459,3 +1459,18 @@ document.getElementById("langToggleBtn").addEventListener("click", () => {
 });
 
 init();
+
+/* ---------- โหมดตรวจระบบ: เปิดด้วย ?debug=1 ที่ท้าย URL แล้วแสดงผลเป็นกล่องข้อความ ---------- */
+async function runDebugChecks() {
+  const lines = [];
+  const show = (label, r) => lines.push(label + ": " + JSON.stringify(r).slice(0, 400));
+  show("login", fbUser ? (fbUser.email || "มีผู้ใช้") : "ยังไม่ได้ล็อกอิน");
+  show("is_allowed", await sb.rpc("is_allowed"));
+  show("my_role", await sb.rpc("my_role"));
+  show("files", await sb.from("files").select("id,file_name").limit(3));
+  show("usage", await sb.rpc("get_storage_usage"));
+  alert(lines.join("\n\n"));
+}
+if (new URLSearchParams(location.search).get("debug") === "1") {
+  setTimeout(runDebugChecks, 3000);
+}
