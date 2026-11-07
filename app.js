@@ -733,8 +733,8 @@ async function loadAll(attempt = 0) {
   ]);
   const err = p.error || f.error;
   // ครั้งแรกอาจได้ผลว่างหรือผิดพลาดขณะโทเคนยังไม่พร้อม จึงลองใหม่อัตโนมัติ
-  const emptyFirst = !err && attempt === 0 && !!fbUser && (f.data || []).length === 0;
-  if ((err || emptyFirst) && attempt < 2) {
+  const emptyResult = !err && (f.data || []).length === 0;
+  if ((err || emptyResult) && attempt < 2) {
     setTimeout(() => loadAll(attempt + 1), 1200);
     return;
   }
