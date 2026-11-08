@@ -67,6 +67,7 @@ let selected = new Set();
 let cols = { category: true, size: true, date: true };
 let activity = [];
 let canDelete = false;
+let currentRole = null;
 let pendingAction = null;
 let openPop = null;
 let typeBtn = null;
@@ -297,6 +298,7 @@ async function updateProfile() {
   let roleText = t("profile_role_none");
   try {
     const { data } = await withTimeout(sb.rpc("my_role"));
+    currentRole = data || null;
     if (data === "admin") roleText = t("profile_role_admin");
     else if (data === "uploader") roleText = t("profile_role_uploader");
   } catch {
