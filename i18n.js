@@ -3,6 +3,7 @@
   var DICT = {
     th: {
       app_title: "AskFile - ไฟล์และทรัพยากร",
+      nt_title: "โน้ต", nt_desc: "เขียนบันทึก จัดกลุ่มตามหัวข้อ ใส่แท็ก และไฮไลท์สิ่งสำคัญ", nt_new: "+ โน้ตใหม่", nt_search_ph: "ค้นหาโน้ต...", nt_all_colors: "ทุกสี", nt_no_color: "ไม่มีสี", nt_yellow: "เหลือง", nt_green: "เขียว", nt_blue: "ฟ้า", nt_pink: "ชมพู", nt_all_tags: "ทุกแท็ก", nt_empty: "ยังไม่มีโน้ต กด + โน้ตใหม่ เพื่อเริ่มเขียน", nt_no_topic: "ไม่มีหัวข้อ", nt_add_here: "เพิ่มโน้ตในหัวข้อนี้", nt_untitled: "ไม่มีชื่อ", nt_view: "ดู", nt_edit: "แก้ไขโน้ต", nt_title_ph: "หัวข้อโน้ต", nt_topic: "หัวข้อ (Section)", nt_topic_ph: "เช่น งาน, ไอเดีย", nt_color: "สี", nt_tags: "แท็ก (คั่นด้วยเครื่องหมายจุลภาค)", nt_tags_ph: "เช่น ด่วน, ประชุม", nt_body_ph: "เขียนบันทึกที่นี่...", nt_save: "บันทึก", nt_cancel: "ยกเลิก", nt_delete: "ลบ", nt_saved: "บันทึกโน้ตแล้ว", nt_deleted: "ลบโน้ตแล้ว", nt_no_perm: "ไม่มีสิทธิ์แก้ไขโน้ตนี้", nt_need_text: "กรุณาใส่หัวข้อหรือเนื้อหา", nt_confirm_delete: "ลบโน้ตนี้?",
       menu_view: "ดู", preview_close: "ปิด", preview_download: "ดาวน์โหลด", preview_unsupported: "ไม่รองรับการแสดงตัวอย่างไฟล์ประเภทนี้",
       note_view_edit: "แก้ไข", note_view_close: "ปิด",
       nav_notes: "โน้ต", notes_title: "โน้ต", notes_desc: "จดบันทึก จัดหมวดด้วยหัวข้อและแท็ก และไฮไลท์สิ่งสำคัญ",
@@ -79,6 +80,7 @@
     },
     en: {
       app_title: "AskFile - Files & Assets",
+      nt_title: "Notes", nt_desc: "Write notes, group them by topic, add tags, and highlight what matters", nt_new: "+ New note", nt_search_ph: "Search notes...", nt_all_colors: "All colors", nt_no_color: "No color", nt_yellow: "Yellow", nt_green: "Green", nt_blue: "Blue", nt_pink: "Pink", nt_all_tags: "All tags", nt_empty: "No notes yet. Click + New note to start.", nt_no_topic: "No topic", nt_add_here: "Add note here", nt_untitled: "Untitled", nt_view: "View", nt_edit: "Edit note", nt_title_ph: "Note title", nt_topic: "Topic (Section)", nt_topic_ph: "e.g. Work, Ideas", nt_color: "Color", nt_tags: "Tags (comma separated)", nt_tags_ph: "e.g. urgent, meeting", nt_body_ph: "Write your note here...", nt_save: "Save", nt_cancel: "Cancel", nt_delete: "Delete", nt_saved: "Note saved", nt_deleted: "Note deleted", nt_no_perm: "No permission to change this note", nt_need_text: "Please enter a title or some text", nt_confirm_delete: "Delete this note?",
       menu_view: "View", preview_close: "Close", preview_download: "Download", preview_unsupported: "Preview is not supported for this file type",
       note_view_edit: "Edit", note_view_close: "Close",
       nav_notes: "Notes", notes_title: "Notes", notes_desc: "Write notes, group them by topic and tags, and highlight what matters",
