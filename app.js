@@ -1,422 +1,1430 @@
-<!DOCTYPE html>
-<html class="dark" lang="th"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>AskFile - Files &amp; Assets</title>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
-<script src="theme.js"></script>
-<script src="i18n.js"></script>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="tailwind-config.js"></script>
-<link rel="stylesheet" href="styles.css"/>
-</head>
-<body data-page="home" class="bg-background text-on-surface antialiased font-body-md text-body-md min-h-screen md:h-screen flex flex-col md:overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut as fbSignOut }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
-<input type="file" id="fileInputHidden" class="hidden">
+/* ===== ตั้งค่า ===== */
+const SUPABASE_URL = "https://qxatfxjaemqumxhgqlgu.supabase.co";
+const SUPABASE_KEY = "sb_publishable_kFK1TySyqbOldG1X2FcijA_aFi9Udpk";
 
-<!-- LOGIN SCREEN -->
-<div id="loginScreen" class="hidden fixed inset-0 z-[100] flex-col md:flex-row">
+// ตั้งค่า Firebase (คัดลอกจาก Firebase Console → Project settings → Your apps)
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCLhvHij49dsfmmdKFOB4tYMxC1F4r7oxs",
+  authDomain: "fen-board.firebaseapp.com",
+  projectId: "fen-board",
+  appId: "1:1002777913125:web:9e32ce19faa76e3bf21ccc",
+};
+/* ================== */
 
-<div class="login-left hidden md:flex flex-1 flex-col justify-between p-10 lg:p-14 text-on-surface">
-<div class="font-headline-sm text-headline-sm font-semibold tracking-tight">AskFile</div>
-<div class="max-w-xl">
-<h2 class="font-headline-lg text-headline-lg font-semibold tracking-tight" data-i18n="login_headline">จัดเก็บและแชร์ไฟล์งานของทีมอย่างปลอดภัย</h2>
-<ul class="mt-10 grid grid-cols-2 gap-x-8 gap-y-7">
-<li class="flex items-start gap-3"><span class="material-symbols-outlined text-primary">cloud_upload</span><span class="font-body-md text-body-md text-on-surface-variant" data-i18n="login_feat1">อัปโหลดและจัดระเบียบไฟล์โปรเจกต์</span></li>
-<li class="flex items-start gap-3"><span class="material-symbols-outlined text-primary">share</span><span class="font-body-md text-body-md text-on-surface-variant" data-i18n="login_feat2">แชร์ลิงก์ที่หมดอายุได้ตามเวลา</span></li>
-<li class="flex items-start gap-3"><span class="material-symbols-outlined text-primary">verified_user</span><span class="font-body-md text-body-md text-on-surface-variant" data-i18n="login_feat3">เข้าใช้งานด้วยบัญชี Google ที่ได้รับอนุญาต</span></li>
-<li class="flex items-start gap-3"><span class="material-symbols-outlined text-primary">delete</span><span class="font-body-md text-body-md text-on-surface-variant" data-i18n="login_feat4">ถังขยะและกู้คืนไฟล์ได้</span></li>
-</ul>
-</div>
-<div class="font-body-sm text-body-sm text-outline" data-i18n="login_footer">ระบบนี้จำกัดการเข้าถึงเฉพาะอีเมลที่อนุญาต</div>
-</div>
+const BUCKET = "project-files";
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const DEFAULT_PROJECT_NAME = "ไฟล์ทั่วไป";
+const DB_LIMIT = 500 * 1024 * 1024;
+const STORAGE_LIMIT = 1024 * 1024 * 1024;
+const DOWNLOAD_LINK_SECONDS = 60;
+const SHARE_LINK_SECONDS = 3600;
+const RECENT_DAYS = 7;
 
-<div class="login-right flex flex-1 items-center justify-center p-6">
-<div class="glass-card w-full max-w-sm p-8 space-y-5">
-<div class="text-center space-y-1">
-<h1 class="font-headline-md text-headline-md font-semibold tracking-tight text-on-surface" data-i18n="login">เข้าสู่ระบบ</h1>
-<p class="font-body-sm text-body-sm text-outline" data-i18n="login_sub">ใช้บัญชี Google ที่ได้รับอนุญาตเท่านั้น</p>
-</div>
-<button type="button" id="googleLoginBtn" class="glass-btn"><span class="material-symbols-outlined !text-[18px]">account_circle</span><span data-i18n="google_login">เข้าสู่ระบบด้วย Google</span></button>
-<button type="button" id="loginCancel" class="glass-btn" data-i18n="login_cancel">ยกเลิก</button>
-<p id="loginMsg" class="text-center text-body-sm text-error min-h-[1rem]"></p>
-</div>
-</div>
+const TYPE_KEYS = ["PDF", "IMAGE", "DOCUMENT", "ARCHIVE", "DESIGN", "VIDEO", "OTHER"];
+const NAV_VIEWS = ["files", "shared", "recent", "trash"];
+const NAV_ACTIVE = "text-on-surface font-label-md text-label-md border-b-2 border-primary-container pb-1 transition-colors";
+const NAV_INACTIVE = "text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface";
+const COL_KEYS = { 2: "category", 3: "size", 4: "date" };
 
-</div>
+// ถ้ายังไม่ได้ตั้งค่า Firebase ให้ข้ามไป เพื่อให้หน้าเว็บยังกดได้ตามปกติ
+const FIREBASE_READY = !Object.values(FIREBASE_CONFIG).some((v) => String(v).startsWith("ใส่"));
+let fbAuth = null;
+try {
+  if (FIREBASE_READY) fbAuth = getAuth(initializeApp(FIREBASE_CONFIG));
+} catch (err) {
+  console.error("Firebase init failed:", err);
+}
+let fbUser = null;
+// สัญญาณว่าระบบล็อกอินรู้สถานะแล้ว ใช้ให้การโหลดข้อมูลรอจนกว่าจะพร้อม
+let resolveAuth;
+const authPromise = new Promise((r) => (resolveAuth = r));
 
-<!-- TOP NAV BAR -->
-<header id="topNav" class="flex flex-wrap justify-between items-center gap-2 min-h-[3.5rem] py-2 px-3 md:px-6 w-full border-b border-outline-variant bg-surface shrink-0 z-30">
-<button type="button" id="menuBtn" data-i18n-title="menu_open" class="md:hidden p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors">
-<span class="material-symbols-outlined">menu</span>
-</button>
-<div id="topLeft" class="flex flex-1 min-w-0 items-center gap-6">
-<span id="headerBrand" class="font-headline-sm text-headline-sm font-semibold text-on-surface tracking-tight">AskFile</span>
-<nav id="routeNav" class="flex items-center gap-4 whitespace-nowrap">
-<a href="#" class="sidebar-link font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-1" data-route="home"><span data-i18n="sidebar_home">หน้าแรก</span></a>
-<a href="#room-work" class="sidebar-link font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-1" data-route="workspace"><span>room-work</span></a>
-</nav>
-</div>
-<nav id="headerNav" class="hidden flex items-center gap-4 overflow-x-auto whitespace-nowrap min-w-0 md:ml-2">
-<a class="text-on-surface font-label-md text-label-md border-b-2 border-primary-container pb-1 transition-colors" href="#" data-view="files"><span data-i18n="nav_files">Files</span></a>
-<a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="shared"><span data-i18n="nav_shared">Shared</span></a>
-<a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="recent"><span data-i18n="nav_recent">Recent</span></a>
-<a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="trash"><span data-i18n="nav_trash">Trash</span></a>
-<a href="#" data-view="notes" class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface"><span>note</span></a>
-</nav>
-<div id="topRight" class="flex flex-1 items-center justify-end gap-2">
-<button type="button" id="langToggleBtn" data-i18n-title="lang_btn_title" class="h-8 px-2 rounded-lg border border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-sm text-label-sm transition-colors active:scale-[0.98]"><span id="langLabel">EN</span></button>
-<button class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150 active:scale-[0.98]" id="themeToggleBtn" title="Toggle theme">
-<span class="material-symbols-outlined">dark_mode</span>
-</button>
-<div class="h-4 w-[1px] bg-outline-variant mx-1"></div>
-<button class="h-8 px-3 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-on-surface/90 active:scale-[0.98] transition-all hidden md:flex items-center gap-1.5 shadow-sm" id="headerUpload" style="display:none" data-upload>
-<span class="material-symbols-outlined !text-[16px]">add</span>
-<span><span data-i18n="upload_file">Upload File</span></span>
-</button>
-<button id="logoutBtn" class="h-8 px-3 whitespace-nowrap shrink-0 rounded-lg border border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-md text-label-md transition-colors">ออกจากระบบ</button>
-<div class="ml-1 w-7 h-7 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center overflow-hidden">
-<span class="material-symbols-outlined !text-[16px] text-on-surface-variant">person</span>
-</div>
-</div>
-</header>
+// ส่ง ID token ของ Firebase ให้ Supabase ทุกคำขอ เพื่อให้ RLS เห็นอีเมลที่ล็อกอิน
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  accessToken: async () => (fbUser ? fbUser.getIdToken() : null),
+});
+// ไว้ตรวจปัญหาในคอนโซลของเบราว์เซอร์เท่านั้น
+window.sb = sb;
+window.fbAuth = fbAuth;
 
-<!-- MAIN APP CONTAINER -->
-<div class="flex-1 flex md:overflow-hidden">
+let projects = [];
+let files = [];
+let shareRows = [];
+let shown = [];
+let view = "files";
+let typeFilter = "all";
+let groupFilter = "all";
+const GROUPS = { docs: ["DOCUMENT", "PDF"], images: ["IMAGE"], archives: ["ARCHIVE"] };
+let searchQ = "";
+let page = 1;
+let perPage = 10;
+let selected = new Set();
+let cols = { category: true, size: true, date: true };
+let activity = [];
+let canDelete = false;
+let currentRole = null;
+let pendingAction = null;
+let openPop = null;
+let typeBtn = null;
 
-<!-- MAIN VIEW CANVAS -->
-<div id="sidebarBackdrop" class="hidden fixed inset-0 bg-black/50 z-50 md:hidden"></div>
-<aside id="sidebar" class="w-56 shrink-0 flex-col gap-1 p-3 border-r border-outline-variant bg-surface-container-lowest">
-<div id="sidebarBrand" class="px-3 pt-1 pb-3 font-headline-sm text-headline-sm font-semibold text-on-surface tracking-tight">AskFile</div>
-<a href="#" class="sidebar-link flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-colors" data-route="home"><span class="material-symbols-outlined !text-[18px]">home</span><span data-i18n="sidebar_home">หน้าแรก</span></a>
-<a href="#room-work" class="sidebar-link flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-colors" data-route="workspace"><span class="material-symbols-outlined !text-[18px]">folder</span><span>room-work</span></a>
-</aside>
-<main class="flex-1 flex flex-col min-w-0 bg-background md:overflow-y-auto">
-<section id="viewHome">
-<div class="relative z-10 min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center text-center px-6 py-16">
-<h1 class="font-headline-lg text-headline-lg font-semibold text-on-surface tracking-tight welcome-title welcome-shimmer-on" data-i18n="home_title">ยินดีต้อนรับสู่ AskFile</h1>
-<p class="mt-3 max-w-md font-body-md text-body-md text-on-surface-variant welcome-desc" data-i18n="home_desc">พื้นที่จัดเก็บและแชร์ไฟล์งานของทีม เลือก room-work จากเมนูเพื่อเริ่มใช้งาน</p>
-<nav class="mt-10 flex flex-wrap items-center justify-center gap-4 welcome-nav">
-<a href="#" class="sidebar-link glass-btn" data-route="home"><span class="material-symbols-outlined !text-[18px]">home</span><span data-i18n="sidebar_home">หน้าแรก</span></a>
-<a href="#room-work" class="sidebar-link glass-btn" data-route="workspace"><span class="material-symbols-outlined !text-[18px]">folder</span><span>room-work</span></a>
-</nav>
-<div id="profileCard" class="mt-8 w-full max-w-sm glass-card flex items-center gap-4 p-4 text-left">
-<div class="w-12 h-12 shrink-0">
-<img id="profileAvatar" alt="" class="w-12 h-12 rounded-full object-cover border border-white/30" style="display:none"/>
-<div id="profileInitial" class="w-12 h-12 rounded-full flex items-center justify-center font-headline-sm text-headline-sm text-on-surface bg-white/10 border border-white/30">?</div>
-</div>
-<div class="min-w-0 flex-1">
-<div id="profileName" class="font-label-md text-label-md text-on-surface truncate"></div>
-<div id="profileEmail" class="font-body-sm text-body-sm text-outline truncate"></div>
-<div id="profileRole" class="mt-1 inline-flex px-2 py-0.5 rounded-full text-label-sm font-label-sm text-on-surface-variant bg-white/10 border border-white/20">-</div>
-</div>
-<button type="button" id="profileLoginBtn" class="glass-btn shrink-0" data-i18n="profile_signin">เข้าสู่ระบบ</button>
-<button type="button" id="profileLogoutBtn" class="glass-btn shrink-0" style="display:none" data-i18n="profile_signout">ออกจากระบบ</button>
-</div>
-</div>
-</section>
-<section id="viewWorkspace" class="hidden">
-<div id="workRow" class="lg:flex lg:items-start lg:gap-6 lg:max-w-[1900px] lg:mx-auto lg:px-6">
-<div id="fileContent" class="max-w-[1400px] w-full mx-auto p-4 md:p-6 lg:p-8 space-y-6 lg:!block lg:flex-1 lg:min-w-0 lg:max-w-none">
-<div id="siteName" class="text-right font-headline-sm text-headline-sm font-semibold text-on-surface tracking-tight">AskFile</div>
+/* ---------- Utilities ---------- */
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-<div class="space-y-1">
-<div class="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm"><span class="text-on-surface font-medium"><span data-i18n="crumb_all">All Documents</span></span></div>
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-1">
-<div>
-<h1 class="font-headline-lg text-headline-lg font-semibold text-on-surface tracking-tight"><span data-i18n="page_title">Files &amp; Assets</span></h1>
-<p class="font-body-md text-body-md text-on-surface-variant"><span data-i18n="page_desc">Manage and organize your project files, media, and uploaded assets.</span></p>
-</div>
-<div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+const fmtSize = (b) => {
+  if (!b) return "0 B";
+  const u = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), 4);
+  return (b / Math.pow(1024, i)).toFixed(i ? 1 : 0) + " " + u[i];
+};
+const fmtDate = (d) => new Date(d).toLocaleDateString(window.getLang() === "th" ? "th-TH" : "en-US", { month: "short", day: "numeric", year: "numeric" });
 
-<button class="h-9 px-4 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-semibold hover:bg-on-surface/90 flex items-center gap-2 active:scale-[0.98] transition-all shadow-sm" data-upload>
-<span class="material-symbols-outlined !text-[18px]">add</span>
-<span><span data-i18n="upload_file">Upload File</span></span>
-</button>
-</div>
-</div>
-</div>
+function fileType(name) {
+  const ext = (name.split(".").pop() || "").toLowerCase();
+  if (ext === "pdf") return "PDF";
+  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) return "IMAGE";
+  if (["doc", "docx", "txt", "md", "xlsx", "csv"].includes(ext)) return "DOCUMENT";
+  if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return "ARCHIVE";
+  if (["fig", "sketch", "xd"].includes(ext)) return "DESIGN";
+  if (["mp4", "mov", "webm"].includes(ext)) return "VIDEO";
+  return "OTHER";
+}
 
-<!-- USAGE CARD -->
-<div class="rounded-lg border border-outline-variant bg-surface-container-low p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-<div class="space-y-2">
-<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface">
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-primary !text-[16px]">database</span>
-              <span data-i18n="usage_db">ฐานข้อมูล (Database)</span>
-            </span>
-<span class="font-code-inline text-code-inline text-on-surface-variant" id="dbText">-</span>
-</div>
-<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
-<div class="bg-primary-container h-full rounded-full transition-all duration-500" id="dbBar" style="width: 0%"></div>
-</div>
-<div class="font-body-sm text-body-sm text-outline" id="dbPct"><span data-i18n="usage_db_desc">ทั้งฐานข้อมูลรวมทุกตาราง</span></div>
-</div>
-<div class="space-y-2">
-<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface">
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-primary !text-[16px]">folder_zip</span>
-              <span data-i18n="usage_st">ไฟล์ที่อัปโหลด (Storage)</span>
-            </span>
-<span class="font-code-inline text-code-inline text-on-surface-variant" id="stText">-</span>
-</div>
-<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
-<div class="bg-primary-container h-full rounded-full transition-all duration-500" id="stBar" style="width: 0%"></div>
-</div>
-<div class="font-body-sm text-body-sm text-outline" id="stPct"><span data-i18n="usage_st_desc">ไฟล์ทั้งหมดใน bucket project-files</span></div>
-</div>
-<div class="md:col-span-2 flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-outline-variant">
-<span class="font-body-sm text-body-sm text-outline"><span data-i18n="usage_quota">Supabase (ฐานข้อมูล 500 MB, Storage 1 GB)</span></span>
-<button class="h-7 px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface font-label-sm text-label-sm flex items-center gap-1.5 transition-colors active:scale-[0.98]" id="usageRefreshBtn">
-<span class="material-symbols-outlined !text-[14px]">refresh</span>
-              <span data-i18n="refresh_usage">รีเฟรชขนาด</span>
-            </button>
-</div>
-</div>
+const fileInfo = (name) => {
+  const ext = (name.split(".").pop() || "").toLowerCase();
+  if (ext === "pdf") return { label: t("info_pdf"), icon: "picture_as_pdf", cls: "bg-error-container/20 border-error-container/40 text-error" };
+  if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext)) return { label: t("info_image"), icon: "image", cls: "bg-primary-container/20 border-primary-container/30 text-primary" };
+  if (ext === "svg") return { label: t("info_svg"), icon: "brush", cls: "bg-secondary-container/30 border-secondary-container/50 text-secondary" };
+  if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return { label: t("info_archive"), icon: "folder_zip", cls: "bg-tertiary-container/30 border-tertiary-container/40 text-tertiary" };
+  if (["doc", "docx", "txt", "md"].includes(ext)) return { label: t("info_doc"), icon: "description", cls: "bg-surface-container-high border-outline-variant text-outline" };
+  if (["fig", "sketch", "xd"].includes(ext)) return { label: t("info_design"), icon: "dashboard_customize", cls: "bg-primary-container/20 border-primary-container/30 text-primary" };
+  if (["mp4", "mov", "webm"].includes(ext)) return { label: t("info_video"), icon: "movie", cls: "bg-primary-container/15 border-primary-container/25 text-primary-fixed" };
+  return { label: ext ? t("info_ext", { ext: ext.toUpperCase() }) : t("info_file"), icon: "description", cls: "bg-surface-container-high border-outline-variant text-outline" };
+};
 
-<!-- TOOLBAR -->
-<div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-surface-container-low p-2 rounded-lg border border-outline-variant">
-<div class="flex flex-wrap items-center gap-2">
-<div class="relative">
-<button class="h-8 px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors active:scale-[0.98]">
-<span class="material-symbols-outlined text-outline !text-[16px]">filter_list</span>
-<span><span data-i18n="type_all">All Types</span></span>
-<span class="material-symbols-outlined text-outline !text-[16px]">keyboard_arrow_down</span>
-</button>
-</div>
-<div class="relative flex-1 sm:w-72">
-<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline !text-[16px]">search</span>
-<input class="w-full h-8 pl-8 pr-12 text-label-md font-label-md bg-surface border border-outline-variant rounded-lg text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" id="fileSearch" placeholder="Filter files by name or tag..." data-i18n-ph="filter_ph" type="text"/>
-<div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-<kbd class="px-1.5 py-0.5 text-[10px] font-code-inline text-outline bg-surface-container-high rounded border border-outline-variant">⌘K</kbd>
-</div>
-</div>
-<div class="flex flex-wrap items-center gap-1.5 md:pl-2 md:border-l border-outline-variant" id="groupPills">
-<button type="button" data-act="group" data-val="all" class="h-7 px-2.5 rounded-full text-label-sm font-label-sm transition-colors whitespace-nowrap"><span data-i18n="grp_all">All</span></button>
-<button type="button" data-act="group" data-val="docs" class="h-7 px-2.5 rounded-full text-label-sm font-label-sm transition-colors whitespace-nowrap"><span data-i18n="grp_docs">Documents</span></button>
-<button type="button" data-act="group" data-val="images" class="h-7 px-2.5 rounded-full text-label-sm font-label-sm transition-colors whitespace-nowrap"><span data-i18n="grp_images">Images</span></button>
-<button type="button" data-act="group" data-val="archives" class="h-7 px-2.5 rounded-full text-label-sm font-label-sm transition-colors whitespace-nowrap"><span data-i18n="grp_archives">Archives</span></button>
-</div>
-</div>
-<div class="flex items-center gap-2 justify-end">
-<button id="purgeAllBtn" type="button" data-act="purge-all" data-i18n="purge_all" style="display:none" class="h-8 px-3 rounded-lg border border-error/50 bg-surface text-error hover:bg-error-container/30 font-label-md text-label-md transition-colors active:scale-[0.98]">ลบทั้งหมด</button>
-<button class="h-8 px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-colors active:scale-[0.98]">
-<span class="material-symbols-outlined text-outline !text-[16px]">view_column</span>
-<span><span data-i18n="columns">Columns</span></span>
-</button>
-<button class="h-8 w-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface flex items-center justify-center transition-colors active:scale-[0.98]" id="refreshBtn" data-i18n-title="refresh_list">
-<span class="material-symbols-outlined !text-[16px]">refresh</span>
-</button>
-</div>
-</div>
+const projectName = (id) => projects.find((p) => p.id === id)?.name ?? "-";
 
-<!-- EMPTY STATE -->
-<div class="hidden relative w-full rounded-xl border border-dashed border-outline-variant/60 bg-surface-container-lowest/50 p-12 lg:p-16 flex-col items-center justify-center text-center max-w-2xl mx-auto my-4 min-h-[420px] transition-all hover:border-outline/80" id="emptyState">
-<div class="w-16 h-16 rounded-full bg-surface-container-high/70 border border-outline-variant/80 flex items-center justify-center text-on-surface-variant mb-5 shadow-sm">
-<span class="material-symbols-outlined text-primary" style="font-size: 28px;">upload_file</span>
-</div>
-<h2 class="font-headline-md text-headline-md font-semibold tracking-tight text-on-surface"><span data-i18n="empty_title">No files uploaded yet</span></h2>
-<p class="font-body-md text-body-md text-on-surface-variant max-w-md mt-2 mb-6 leading-relaxed">
-            <span data-i18n="empty_desc">Drag and drop your files here or click the button below to upload your first file to this workspace.</span>
-          </p>
-<div class="flex flex-wrap items-center justify-center gap-3">
-<button class="flex items-center gap-2 h-9 px-4 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-white active:scale-[0.98] transition-all shadow-sm" data-upload>
-<span class="material-symbols-outlined !text-[16px]">add</span>
-              <span data-i18n="upload_plus">+ Upload File</span>
-            </button>
-<button class="flex items-center gap-2 h-9 px-4 rounded-lg border border-outline-variant bg-transparent hover:bg-surface-container text-on-surface font-label-md text-label-md active:scale-[0.98] transition-all">
-<span class="material-symbols-outlined !text-[16px]">cloud</span>
-              <span data-i18n="import_cloud">Import from Cloud</span>
-            </button>
-</div>
-<div class="mt-10 pt-6 border-t border-outline-variant/40 flex flex-col sm:flex-row items-center justify-center gap-3 text-outline font-body-sm text-body-sm text-[11px]">
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined !text-[14px]">description</span>
-              <span data-i18n="formats">Supported formats: PDF, PNG, JPG, SVG, MP4, ZIP (up to 50 MB)</span>
-            </span>
-<span class="hidden sm:inline">•</span>
-<span class="flex items-center gap-1 text-on-surface-variant">
-<span class="material-symbols-outlined !text-[13px]">lock</span>
-              <span data-i18n="storage_secure">End-to-end encrypted storage</span>
-            </span>
-</div>
-</div>
+function showToast(msg, icon = "check_circle") {
+  const t = document.getElementById("toast");
+  document.getElementById("toastMsg").textContent = msg;
+  document.getElementById("toastIcon").textContent = icon;
+  t.classList.remove("hidden"); t.classList.add("flex");
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => { t.classList.add("hidden"); t.classList.remove("flex"); }, 2800);
+}
+window.showToast = showToast;
 
-<!-- TABLE -->
-<div class="rounded-lg border border-outline-variant bg-surface overflow-hidden shadow-sm" id="tableCard">
-<div class="overflow-x-auto min-w-full">
-<table class="w-full text-left border-collapse">
-<thead>
-<tr class="border-b border-outline-variant bg-surface-container-lowest/60 text-on-surface-variant font-label-md text-label-md">
-<th class="w-12 px-4 py-3 text-center">
-<input class="w-4 h-4 rounded bg-surface border-outline-variant text-primary-container focus:ring-primary-container focus:ring-offset-surface cursor-pointer" id="selectAll" type="checkbox"/>
-</th>
-<th class="px-4 py-3 font-medium">
-<button class="flex items-center gap-1.5 text-on-surface hover:text-primary transition-colors group">
-<span><span data-i18n="col_name">File Name</span></span>
-<span class="material-symbols-outlined !text-[16px] text-outline group-hover:text-primary">unfold_more</span>
-</button>
-</th>
-<th class="px-4 py-3 font-medium">
-<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface transition-colors">
-<span><span data-i18n="col_category">Category</span></span>
-<span class="material-symbols-outlined !text-[14px] text-outline">arrow_drop_down</span>
-</button>
-</th>
-<th class="px-4 py-3 font-medium">
-<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface transition-colors">
-<span><span data-i18n="col_size">Size</span></span>
-<span class="material-symbols-outlined !text-[14px] text-outline">unfold_more</span>
-</button>
-</th>
-<th class="px-4 py-3 font-medium">
-<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface transition-colors">
-<span><span data-i18n="col_date">Uploaded Date</span></span>
-<span class="material-symbols-outlined !text-[14px] text-outline">arrow_drop_down</span>
-</button>
-</th>
-<th class="w-14 px-4 py-3 text-right font-medium">
-<span class="sr-only"><span data-i18n="col_actions">Actions</span></span>
-</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-outline-variant font-body-md text-body-md" id="tableBody"></tbody>
-</table>
-</div>
+function logActivity(msg) {
+  activity.unshift({ msg, time: new Date() });
+  activity = activity.slice(0, 30);
+}
 
-<!-- PAGINATION FOOTER -->
-<div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t border-outline-variant bg-surface-container-lowest/60 text-on-surface-variant font-label-sm text-label-sm">
-<div class="text-outline font-medium text-center sm:text-left">
-<span class="text-on-surface font-semibold" id="selCount">0</span> <span data-i18n="sel_of">of</span> <span id="totalCount">0</span> <span data-i18n="sel_suffix">row(s) selected</span>
-            </div>
-<div class="flex flex-wrap items-center gap-4 sm:gap-6 justify-center sm:justify-end">
-<div class="flex items-center gap-2">
-<span class="text-on-surface-variant"><span data-i18n="rows_per_page">Rows per page</span></span>
-<div class="relative">
-<select class="h-8 pl-2 pr-6 text-label-sm font-label-sm bg-surface border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container appearance-none cursor-pointer" id="perPage">
-<option selected="" value="10">10</option>
-<option value="20">20</option>
-<option value="50">50</option>
-<option value="100">100</option>
-</select>
-<span class="material-symbols-outlined absolute right-1.5 top-1/2 -translate-y-1/2 text-outline pointer-events-none !text-[14px]">unfold_more</span>
-</div>
-</div>
-<div class="text-on-surface font-medium" id="pageInfo">Page 1 of 1</div>
-<div class="flex items-center gap-1">
-<button class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-outline hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]" id="firstPage" title="First page">
-<span class="material-symbols-outlined !text-[16px]">first_page</span>
-</button>
-<button class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-outline hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]" id="prevPage" title="Previous page">
-<span class="material-symbols-outlined !text-[16px]">chevron_left</span>
-</button>
-<button class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface-variant hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]" id="nextPage" title="Next page">
-<span class="material-symbols-outlined !text-[16px]">chevron_right</span>
-</button>
-<button class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface-variant hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]" id="lastPage" title="Last page">
-<span class="material-symbols-outlined !text-[16px]">last_page</span>
-</button>
-</div>
-</div>
-</div>
-</div>
+/* ---------- เมนูลอย (อยู่ใน body จึงไม่ถูกตัดหรือทับ) ---------- */
+function closePop() {
+  if (openPop) openPop.remove();
+  openPop = null;
+}
+window.addEventListener("scroll", closePop, true);
+window.addEventListener("resize", closePop);
 
-</div>
-<section id="ntPanel" class="hidden lg:!block lg:w-[420px] lg:shrink-0 lg:sticky lg:top-4">
-<div class="w-full mx-auto p-4 md:p-6 lg:p-0 space-y-6">
-<div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-<div>
-<h1 class="font-headline-lg text-headline-lg font-semibold tracking-tight text-on-surface" data-i18n="nt_title">โน้ต</h1>
-<p class="font-body-md text-body-md text-on-surface-variant" data-i18n="nt_desc">เขียนบันทึก จัดกลุ่มตามหัวข้อ ใส่แท็ก และไฮไลท์สิ่งสำคัญ</p>
-</div>
-<button id="ntNewBtn" type="button" class="glass-btn" data-i18n="nt_new">+ โน้ตใหม่</button>
-</div>
-<div class="glass-card p-4 flex flex-col lg:flex-row lg:items-center gap-3">
-<input id="ntSearch" type="text" data-i18n-ph="nt_search_ph" placeholder="ค้นหาโน้ต..." class="flex-1 h-9 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"/>
-<div id="ntColorPills" class="flex flex-wrap items-center gap-1.5">
-<button type="button" data-nt-color="all" data-i18n="nt_all_colors" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">ทุกสี</button>
-<button type="button" data-nt-color="none" data-i18n="nt_no_color" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">ไม่มีสี</button>
-<button type="button" data-nt-color="yellow" data-i18n="nt_yellow" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">เหลือง</button>
-<button type="button" data-nt-color="green" data-i18n="nt_green" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">เขียว</button>
-<button type="button" data-nt-color="blue" data-i18n="nt_blue" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">ฟ้า</button>
-<button type="button" data-nt-color="pink" data-i18n="nt_pink" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">ชมพู</button>
-</div>
-</div>
-<div id="ntTagChips" class="flex flex-wrap gap-2"></div>
-<div class="glass-card overflow-hidden">
-<div class="hidden md:grid grid-cols-[2fr_1fr_1fr_auto] gap-4 px-4 py-3 border-b border-white/10 font-label-sm text-label-sm text-outline">
-<span>หัวข้อโน้ต</span><span>แท็ก</span><span>อัปเดตล่าสุด</span><span>สี</span>
-</div>
-<div id="ntList"></div>
-<div id="ntEmpty" class="hidden text-center text-outline py-16" data-i18n="nt_empty">ยังไม่มีโน้ต กด + โน้ตใหม่ เพื่อเริ่มเขียน</div>
-</div>
-</div>
-</section>
-</div>
-</section>
-</main>
-</div>
+function positionPop(el, anchor) {
+  const r = anchor.getBoundingClientRect();
+  const w = el.offsetWidth, h = el.offsetHeight;
+  let top = r.bottom + 4;
+  if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 4);
+  let left = r.right - w;
+  left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+  el.style.top = top + "px";
+  el.style.left = left + "px";
+}
 
-<div id="previewModal" class="hidden fixed inset-0 z-[90] items-center justify-center p-4" style="background:rgb(0 0 0 / 0.45)">
-<div class="glass-card w-full max-w-3xl p-4 md:p-6 space-y-3">
-<div class="flex items-center justify-between gap-3">
-<h2 id="previewTitle" class="font-headline-sm text-headline-sm font-semibold text-on-surface truncate"></h2>
-<button id="previewCloseBtn" type="button" class="glass-btn" data-i18n="preview_close">ปิด</button>
-</div>
-<div id="previewBody" class="max-h-[70vh] overflow-auto"></div>
-<div class="flex justify-end">
-<button id="previewDownloadBtn" type="button" class="glass-btn" data-i18n="preview_download">ดาวน์โหลด</button>
-</div>
-</div>
-</div>
-<div id="ntEditor" class="hidden fixed inset-0 z-[90] items-center justify-center p-4" style="background:rgb(0 0 0 / 0.45)">
-<form id="ntForm" class="glass-card w-full max-w-lg p-6 space-y-3 max-h-[90vh] overflow-y-auto">
-<h2 id="ntEditorTitle" class="font-headline-md text-headline-md font-semibold text-on-surface">โน้ตใหม่</h2>
-<input id="ntTitle" type="text" data-i18n-ph="nt_title_ph" placeholder="หัวข้อโน้ต" class="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"/>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-<label class="space-y-1"><span class="font-label-sm text-label-sm text-outline" data-i18n="nt_topic">หัวข้อ (Section)</span>
-<input id="ntTopic" list="ntTopicList" type="text" data-i18n-ph="nt_topic_ph" placeholder="เช่น งาน, ไอเดีย" class="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"/>
-<datalist id="ntTopicList"></datalist></label>
-<label class="space-y-1"><span class="font-label-sm text-label-sm text-outline" data-i18n="nt_color">สี</span>
-<select id="ntColor" class="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none">
-<option value="none" data-i18n="nt_no_color">ไม่มีสี</option>
-<option value="yellow" data-i18n="nt_yellow">เหลือง</option>
-<option value="green" data-i18n="nt_green">เขียว</option>
-<option value="blue" data-i18n="nt_blue">ฟ้า</option>
-<option value="pink" data-i18n="nt_pink">ชมพู</option>
-</select></label>
-</div>
-<label class="space-y-1 block"><span class="font-label-sm text-label-sm text-outline" data-i18n="nt_tags">แท็ก (คั่นด้วยเครื่องหมายจุลภาค)</span>
-<input id="ntTags" type="text" data-i18n-ph="nt_tags_ph" placeholder="เช่น ด่วน, ประชุม" class="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"/></label>
-<textarea id="ntBody" rows="8" data-i18n-ph="nt_body_ph" placeholder="เขียนบันทึกที่นี่..." class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"></textarea>
-<p id="ntMsg" class="text-body-sm text-error min-h-[1rem]"></p>
-<div class="flex flex-wrap gap-2 justify-end">
-<button id="ntDelete" type="button" class="glass-btn text-error" data-i18n="nt_delete">ลบ</button>
-<button id="ntCancel" type="button" class="glass-btn" data-i18n="nt_cancel">ยกเลิก</button>
-<button type="submit" class="glass-btn" data-i18n="nt_save">บันทึก</button>
-</div>
-</form>
-</div>
-<div id="ntView" class="hidden fixed inset-0 z-[90] items-center justify-center p-4" style="background:rgb(0 0 0 / 0.45)">
-<div class="glass-card w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-<div id="ntViewBody"></div>
-<div class="flex justify-end gap-2">
-<button id="ntViewDelete" type="button" class="glass-btn text-error">Delete</button>
-<button id="ntViewEdit" type="button" class="glass-btn">Edit</button>
-<button id="ntViewClose" type="button" class="glass-btn">Close</button>
-</div>
-</div>
-</div>
+function openPopover(anchor, html, key, width = "w-44") {
+  if (openPop && openPop.dataset.key === key) return closePop();
+  closePop();
+  const el = document.createElement("div");
+  el.id = "floatingMenu";
+  el.dataset.key = key;
+  el.className = `fixed z-[60] ${width} rounded-lg bg-surface-container-highest border border-outline-variant shadow-xl p-1 text-on-surface`;
+  el.innerHTML = html;
+  document.body.appendChild(el);
+  positionPop(el, anchor);
+  openPop = el;
+}
 
-<!-- Toast -->
-<div class="fixed bottom-6 right-6 hidden items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-container-high text-on-surface border border-outline-variant shadow-xl text-body-sm z-50" id="toast">
-<span class="material-symbols-outlined !text-[18px] text-tertiary-fixed-dim" id="toastIcon">check_circle</span>
-<span id="toastMsg"></span>
-</div>
+const item = (act, icon, label, id, extra = "") =>
+  `<button type="button" data-act="${act}" data-id="${esc(id)}" class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-label-sm font-label-sm hover:bg-surface-container transition-colors ${extra}">
+     <span class="material-symbols-outlined !text-[15px]">${icon}</span><span>${label}</span>
+   </button>`;
 
-<script src="dots.js"></script>
-<script type="module" src="app.js"></script>
-</body></html>
+const divider = `<div class="h-px bg-outline-variant my-1"></div>`;
+
+function rowMenuHtml(f) {
+  if (view === "trash") {
+    return item("preview", "visibility", t("menu_view"), f.id) +
+           item("restore", "restore_from_trash", t("menu_restore"), f.id) +
+           item("purge", "delete_forever", t("menu_purge"), f.id, "text-error");
+  }
+  return item("preview", "visibility", t("menu_view"), f.id) +
+         item("download", "download", t("menu_download"), f.id) +
+         item("share", "link", t("menu_share"), f.id) +
+         item("rename", "edit", t("menu_rename"), f.id) +
+         divider +
+         item("delete", "delete", t("menu_trash"), f.id, "text-error");
+}
+
+function typeMenuHtml() {
+  const opts = [["all", t("type_all")], ...TYPE_KEYS.map((v) => [v, t("type_" + v)])];
+  return opts.map(([v, l]) => `
+    <button type="button" data-act="type" data-val="${v}" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded text-label-sm font-label-sm hover:bg-surface-container transition-colors ${typeFilter === v ? "text-primary" : ""}">
+      <span>${l}</span>${typeFilter === v ? '<span class="material-symbols-outlined !text-[15px]">check</span>' : ""}
+    </button>`).join("");
+}
+
+function colsMenuHtml() {
+  const row = (key, label) => `
+    <button type="button" data-act="col" data-val="${key}" class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-label-sm font-label-sm hover:bg-surface-container transition-colors">
+      <span class="material-symbols-outlined !text-[15px]">${cols[key] ? "check_box" : "check_box_outline_blank"}</span><span>${label}</span>
+    </button>`;
+  return `<div class="px-2.5 py-1 text-[11px] text-outline">${t("cols_show")}</div>` +
+    row("category", t("col_category")) + row("size", t("col_size")) + row("date", t("col_date"));
+}
+
+function notifyHtml() {
+  const list = activity.slice(0, 15).map((a) => `
+    <div class="px-2.5 py-2 border-b border-outline-variant last:border-0">
+      <div class="text-body-sm text-on-surface">${esc(a.msg)}</div>
+      <div class="text-[11px] text-outline">${a.time.toLocaleTimeString(window.getLang() === "th" ? "th-TH" : "en-US", { hour: "2-digit", minute: "2-digit" })}</div>
+    </div>`).join("");
+  return list || `<div class="px-2.5 py-3 text-body-sm text-outline">${t("no_notify")}</div>`;
+}
+
+function syncGroupPills() {
+  const base = "h-7 px-2.5 rounded-full text-label-sm font-label-sm transition-colors whitespace-nowrap border";
+  document.querySelectorAll('#groupPills button[data-act="group"]').forEach((b) => {
+    const on = b.dataset.val === groupFilter;
+    b.className = base + (on
+      ? " bg-primary-container/20 text-primary border-primary/30"
+      : " border-transparent text-on-surface-variant hover:bg-surface-container hover:text-on-surface");
+  });
+}
+
+function syncTypeLabel() {
+  if (!typeBtn) return;
+  typeBtn.querySelectorAll("span")[1].textContent = typeFilter === "all" ? t("type_all") : t("type_" + typeFilter);
+}
+
+/* ---------- การล็อกอิน: Google ผ่าน Firebase Auth + สิทธิ์จาก allowed_emails ---------- */
+const loginScreen = document.getElementById("loginScreen");
+const logoutBtn = document.getElementById("logoutBtn");
+const viewHome = document.getElementById("viewHome");
+const viewWorkspace = document.getElementById("viewWorkspace");
+const sidebarEl = document.getElementById("sidebar");
+const headerNav = document.getElementById("headerNav");
+
+let authReady = false;
+let rejecting = false;
+
+function showLogin(msg = "") {
+  loginScreen.classList.remove("hidden");
+  loginScreen.classList.add("flex");
+  document.getElementById("loginMsg").textContent = msg;
+}
+
+function hideLogin() {
+  loginScreen.classList.add("hidden");
+  loginScreen.classList.remove("flex");
+}
+
+// กันการค้าง: ถ้าการตรวจสิทธิ์นานเกิน 5 วินาที ถือว่าไม่มีสิทธิ์ก่อน
+const withTimeout = (p, ms = 5000) =>
+  Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+
+async function refreshPermission() {
+  if (!fbUser) {
+    canDelete = false;
+  } else {
+    try {
+      const { data, error } = await withTimeout(sb.rpc("is_allowed"));
+      canDelete = !error && data === true;
+    } catch {
+      canDelete = false;
+    }
+  }
+  logoutBtn.textContent = fbUser ? t("logout") : t("login");
+  await updateProfile();
+}
+
+// แสดงข้อมูลผู้ใช้ที่หน้าแรก: ชื่อ อีเมล รูป และระดับสิทธิ์
+async function updateProfile() {
+  document.getElementById("profileCard").style.visibility = "visible";
+  const nameEl = document.getElementById("profileName");
+  const emailEl = document.getElementById("profileEmail");
+  const roleEl = document.getElementById("profileRole");
+  const avatarEl = document.getElementById("profileAvatar");
+  const initialEl = document.getElementById("profileInitial");
+  const loginBtn = document.getElementById("profileLoginBtn");
+  const logoutBtnEl = document.getElementById("profileLogoutBtn");
+
+  if (!fbUser) {
+    nameEl.textContent = t("profile_guest");
+    emailEl.textContent = "";
+    roleEl.textContent = "-";
+    avatarEl.style.display = "none";
+    initialEl.style.display = "flex";
+    initialEl.textContent = "?";
+    loginBtn.style.display = "";
+    logoutBtnEl.style.display = "none";
+    return;
+  }
+
+  const name = fbUser.displayName || fbUser.email || "";
+  nameEl.textContent = name;
+  emailEl.textContent = fbUser.email || "";
+  initialEl.textContent = (name.trim().charAt(0) || "?").toUpperCase();
+  if (fbUser.photoURL) {
+    avatarEl.src = fbUser.photoURL;
+    avatarEl.style.display = "block";
+    initialEl.style.display = "none";
+  } else {
+    avatarEl.style.display = "none";
+    initialEl.style.display = "flex";
+  }
+
+  let roleText = t("profile_role_none");
+  try {
+    const { data } = await withTimeout(sb.rpc("my_role"));
+    currentRole = data || null;
+    if (data === "admin") roleText = t("profile_role_admin");
+    else if (data === "uploader") roleText = t("profile_role_uploader");
+  } catch {
+    // ถ้าอ่านระดับสิทธิ์ไม่ได้ ใช้ข้อความว่าไม่มีสิทธิ์
+  }
+  roleEl.textContent = roleText;
+  loginBtn.style.display = "none";
+  logoutBtnEl.style.display = "";
+}
+
+document.getElementById("profileLoginBtn").addEventListener("click", signInGoogle);
+document.getElementById("profileLogoutBtn").addEventListener("click", () => logoutBtn.click());
+
+async function signInGoogle() {
+  if (!fbAuth) return showLogin(t("firebase_not_set"));
+  const provider = new GoogleAuthProvider();
+  // ให้แสดงรายการบัญชี Google ทุกครั้งให้เลือก
+  provider.setCustomParameters({ prompt: "select_account" });
+  try {
+    await signInWithPopup(fbAuth, provider);
+  } catch (e) {
+    // มือถือบางรุ่นบล็อก popup ให้เปลี่ยนไปใช้การเปลี่ยนหน้าแทน
+    if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") {
+      return signInWithRedirect(fbAuth, provider);
+    }
+    if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") {
+      showLogin(e.message);
+    }
+  }
+}
+
+// ทำงานเฉพาะเมื่อมีสิทธิ์ ถ้าไม่มีจะแสดงหน้าล็อกอินแล้วทำงานต่อหลังล็อกอิน
+async function requireAdmin(action) {
+  await refreshPermission();
+  if (canDelete) return action();
+  pendingAction = action;
+  showLogin(t("login_need_perm"));
+}
+
+const authListener = async (user) => {
+  fbUser = user;
+  authReady = true;
+  resolveAuth();
+  if (!user && rejecting) {
+    rejecting = false;
+    authReady = true;
+    await refreshPermission();
+    return showLogin(t("no_access"));
+  }
+  await refreshPermission();
+  authReady = true;
+
+  if (user && !canDelete) {
+    // ล็อกอินได้แต่อีเมลไม่อยู่ในรายการ: ออกจากระบบและแจ้งเตือน
+    rejecting = true;
+    pendingAction = null;
+    await fbSignOut(fbAuth);
+    return;
+  }
+  if (user && canDelete) {
+    hideLogin();
+    if (pendingAction) {
+      const action = pendingAction;
+      pendingAction = null;
+      await action();
+    }
+  }
+  routeFromHash();
+  if (user && canDelete && !viewWorkspace.classList.contains("hidden")) loadAll();
+};
+setTimeout(() => {
+  if (!authReady) {
+    authReady = true;
+    updateProfile();
+    routeFromHash();
+  }
+}, 3000);
+
+if (fbAuth) {
+  onAuthStateChanged(fbAuth, authListener);
+} else {
+  authReady = true;
+  routeFromHash();
+}
+
+document.getElementById("googleLoginBtn").addEventListener("click", signInGoogle);
+
+document.getElementById("loginCancel")?.addEventListener("click", () => {
+  pendingAction = null;
+  hideLogin();
+  // กลับหน้าแรกทันที เพื่อให้กด room-work อีกครั้งแล้วขึ้นหน้าล็อกอินได้
+  location.hash = "";
+  setPage("home");
+});
+
+logoutBtn.addEventListener("click", async () => {
+  if (fbUser) {
+    await fbSignOut(fbAuth);
+    location.hash = "";
+    location.reload();
+  } else {
+    showLogin("");
+  }
+});
+
+/* ---------- เส้นทางหน้า: หน้าแรก (สาธารณะ) / room-work (Google + อยู่ในรายการอนุญาต) ---------- */
+function setSidebarOpen(open) {
+  sidebarEl.classList.toggle("open", open);
+  document.getElementById("sidebarBackdrop").classList.toggle("hidden", !open);
+}
+
+function setPage(name) {
+  document.body.dataset.page = name;
+  viewHome.classList.toggle("hidden", name !== "home");
+  viewWorkspace.classList.toggle("hidden", name !== "workspace");
+  headerNav.classList.toggle("hidden", name !== "workspace");
+  document.getElementById("headerUpload").style.display = name === "workspace" ? "" : "none";
+  // เมนูข้างและปุ่มเมนูมือถือแสดงเฉพาะในหน้า room-work
+  sidebarEl.classList.toggle("is-hidden", name !== "workspace");
+  document.getElementById("menuBtn").classList.toggle("is-hidden", name !== "workspace");
+  document.querySelectorAll(".sidebar-link").forEach((a) => {
+    a.classList.toggle("is-active", a.dataset.route === name);
+  });
+  setSidebarOpen(false);
+  if (name === "workspace") {
+    loadAll();
+    loadNotes();
+  }
+  document.getElementById("ntPanel").classList.toggle("hidden", !(name === "workspace" && view === "notes"));
+}
+
+function routeFromHash() {
+  if (!authReady) return;
+  const h = location.hash;
+  if (h === "#room-work") {
+    if (fbUser && canDelete) {
+      hideLogin();
+      setPage("workspace");
+      return;
+    }
+    setPage("home");
+    if (!fbUser) showLogin(t("need_login_enter"));
+    return;
+  }
+  setPage("home");
+}
+window.addEventListener("hashchange", routeFromHash);
+
+// ปุ่ม หน้าแรก / room-work บนแถบด้านบน: จัดการคลิกเองเพื่อให้ทำงานแน่นอน
+document.querySelectorAll("#routeNav [data-route]").forEach((link) => {
+  link.addEventListener("click", (e) => {
+    e.preventDefault();
+    const target = { workspace: "#room-work" }[link.dataset.route] || "";
+    if (location.hash !== target) location.hash = target;
+    routeFromHash();
+  });
+});
+
+document.getElementById("menuBtn").addEventListener("click", () => {
+  setSidebarOpen(!sidebarEl.classList.contains("open"));
+});
+document.getElementById("sidebarBackdrop").addEventListener("click", () => setSidebarOpen(false));
+
+/* ---------- ขนาดพื้นที่ ---------- */
+async function loadUsage() {
+  const { data, error } = await sb.rpc("get_storage_usage");
+  if (error) {
+    document.getElementById("dbText").textContent = t("read_failed");
+    document.getElementById("stText").textContent = t("read_failed");
+    return;
+  }
+  const pct = (v, l) => Math.min(100, (v / l) * 100);
+  const db = Number(data.db_bytes || 0);
+  const st = Number(data.storage_bytes || 0);
+
+  document.getElementById("dbText").textContent = `${fmtSize(db)} / ${fmtSize(DB_LIMIT)}`;
+  document.getElementById("dbBar").style.width = pct(db, DB_LIMIT) + "%";
+  document.getElementById("dbPct").textContent = t("used_pct", { v: pct(db, DB_LIMIT).toFixed(1) });
+
+  document.getElementById("stText").textContent = `${fmtSize(st)} / ${fmtSize(STORAGE_LIMIT)}`;
+  document.getElementById("stBar").style.width = pct(st, STORAGE_LIMIT) + "%";
+  document.getElementById("stPct").textContent = t("used_pct", { v: pct(st, STORAGE_LIMIT).toFixed(1) });
+}
+document.getElementById("usageRefreshBtn").addEventListener("click", loadUsage);
+
+/* ---------- โหลดและแสดงข้อมูล ---------- */
+async function loadAll(attempt = 0) {
+  // รอให้ระบบรู้สถานะการล็อกอินก่อน (สูงสุด 6 วินาที) แล้วค่อยขอข้อมูล
+  await Promise.race([authPromise, new Promise((r) => setTimeout(r, 6000))]);
+  // รอให้โทเคนล็อกอินพร้อมก่อน ไม่งั้นคำขอแรกจะถูกส่งแบบไม่มีสิทธิ์และได้รายการว่าง
+  if (fbUser) {
+    try { await withTimeout(fbUser.getIdToken(), 5000); } catch (err) { console.warn("รับโทเคนไม่สำเร็จ:", err.message); }
+  }
+  const [p, f, s] = await Promise.all([
+    sb.from("projects").select("*").order("created_at", { ascending: false }),
+    sb.from("files").select("*").order("uploaded_at", { ascending: false }),
+    sb.from("share_links").select("file_id, expires_at").gt("expires_at", new Date().toISOString()),
+  ]);
+  const err = p.error || f.error;
+  // ครั้งแรกอาจได้ผลว่างหรือผิดพลาดขณะโทเคนยังไม่พร้อม จึงลองใหม่อัตโนมัติ
+  const emptyResult = !err && (f.data || []).length === 0;
+  if ((err || emptyResult) && attempt < 2) {
+    setTimeout(() => loadAll(attempt + 1), 1200);
+    return;
+  }
+  if (err) return showToast(err.message, "error");
+  if (s.error) console.warn("Share list failed (SQL not run?):", s.error.message);
+
+  projects = p.data;
+  files = f.data;
+  shareRows = s.error ? [] : s.data;
+  const ids = new Set(files.map((x) => x.id));
+  selected = new Set([...selected].filter((id) => ids.has(id)));
+  render();
+  loadUsage();
+}
+
+function computeShown() {
+  const q = searchQ.toLowerCase();
+  const now = Date.now();
+  const sharedIds = new Set(shareRows.map((r) => r.file_id));
+
+  let list;
+  if (view === "trash") {
+    list = files.filter((f) => f.deleted_at);
+  } else {
+    list = files.filter((f) => !f.deleted_at);
+    if (view === "recent") list = list.filter((f) => now - new Date(f.uploaded_at).getTime() <= RECENT_DAYS * 864e5);
+    if (view === "shared") list = list.filter((f) => sharedIds.has(f.id));
+  }
+  if (typeFilter !== "all") list = list.filter((f) => fileType(f.file_name) === typeFilter);
+  if (groupFilter !== "all") list = list.filter((f) => GROUPS[groupFilter].includes(fileType(f.file_name)));
+  if (q) list = list.filter((f) =>
+    f.file_name.toLowerCase().includes(q) || projectName(f.project_id).toLowerCase().includes(q));
+  return list;
+}
+
+function emptyMessage() {
+  return {
+    files: t("empty_search"),
+    shared: t("empty_shared"),
+    recent: t("empty_recent", { n: RECENT_DAYS }),
+    trash: t("empty_trash"),
+  }[view];
+}
+
+function rowHtml(f) {
+  const info = fileInfo(f.file_name);
+  const id = esc(f.id);
+  return `
+  <tr class="bg-transparent hover:bg-surface-container/40 transition-colors group">
+    <td class="px-4 py-3 text-center">
+      <input class="row-checkbox w-4 h-4 rounded bg-surface border-outline-variant text-primary-container focus:ring-primary-container focus:ring-offset-surface cursor-pointer" data-id="${id}" type="checkbox" ${selected.has(f.id) ? "checked" : ""}/>
+    </td>
+    <td class="px-4 py-3">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${info.cls}">
+          <span class="material-symbols-outlined !text-[18px]">${info.icon}</span>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-medium text-on-surface truncate group-hover:text-primary transition-colors cursor-pointer" data-act="preview" data-id="${id}">${esc(f.file_name)}</span>
+          <span class="font-body-sm text-body-sm text-outline truncate">${esc(info.label)} · ${esc(t("uploaded_by"))} ${esc(f.uploaded_by_name || f.uploaded_by_email || "-")}</span>
+        </div>
+      </div>
+    </td>
+    <td class="px-4 py-3">
+      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-label-md font-medium bg-surface-container-high text-on-surface border border-outline-variant">${esc(projectName(f.project_id))}</span>
+    </td>
+    <td class="px-4 py-3 font-code-inline text-code-inline text-on-surface-variant tabular-nums">${fmtSize(f.file_size)}</td>
+    <td class="px-4 py-3 text-on-surface-variant font-body-sm text-body-sm">${fmtDate(f.uploaded_at)}</td>
+    <td class="px-4 py-3 text-right">
+      <button type="button" class="p-1 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-act="menu" data-id="${id}" title="${t('more_options')}">
+        <span class="material-symbols-outlined !text-[18px] pointer-events-none">more_horiz</span>
+      </button>
+    </td>
+  </tr>`;
+}
+
+function applyColumns() {
+  document.querySelectorAll("table tr").forEach((tr) => {
+    [...tr.children].forEach((cell, i) => {
+      const key = COL_KEYS[i];
+      if (key) cell.style.display = cols[key] ? "" : "none";
+    });
+  });
+}
+
+function render() {
+  shown = computeShown();
+
+  const showEmpty = view === "files" && files.filter((f) => !f.deleted_at).length === 0;
+  const es = document.getElementById("emptyState");
+  es.classList.toggle("hidden", !showEmpty);
+  es.classList.toggle("flex", showEmpty);
+  document.getElementById("tableCard").classList.toggle("hidden", showEmpty);
+
+  const pages = Math.max(1, Math.ceil(shown.length / perPage));
+  page = Math.min(page, pages);
+  const slice = shown.slice((page - 1) * perPage, page * perPage);
+
+  document.getElementById("tableBody").innerHTML = slice.length
+    ? slice.map(rowHtml).join("")
+    : `<tr><td colspan="6" class="px-4 py-10 text-center text-outline font-body-sm">${emptyMessage()}</td></tr>`;
+
+  document.getElementById("pageInfo").textContent = t("page_of", { p: page, n: pages });
+  document.getElementById("firstPage").disabled = page <= 1;
+  document.getElementById("prevPage").disabled = page <= 1;
+  document.getElementById("nextPage").disabled = page >= pages;
+  document.getElementById("lastPage").disabled = page >= pages;
+  document.getElementById("totalCount").textContent = shown.length;
+  document.getElementById("selCount").textContent = selected.size;
+
+  applyColumns();
+  updateSelectAll();
+}
+
+function updateSelectAll() {
+  const boxes = [...document.querySelectorAll("#tableBody .row-checkbox")];
+  const checked = boxes.filter((b) => b.checked).length;
+  const master = document.getElementById("selectAll");
+  master.checked = boxes.length > 0 && checked === boxes.length;
+  master.indeterminate = checked > 0 && checked < boxes.length;
+}
+
+/* ---------- เปลี่ยนมุมมอง (Files / Shared / Recent / Trash) ---------- */
+function setView(v) {
+  view = v;
+  page = 1;
+  selected.clear();
+  // note เป็นแท็บในหน้า room-work เดียวกัน: สลับเนื้อหาไฟล์กับหน้าโน้ต
+  const isNotes = v === "notes";
+  document.getElementById("fileContent").classList.toggle("hidden", isNotes);
+  document.getElementById("ntPanel").classList.toggle("hidden", !isNotes);
+  if (isNotes) loadNotes();
+  document.getElementById("purgeAllBtn").style.display = v === "trash" ? "" : "none";
+  document.querySelectorAll("#headerNav a[data-view]").forEach((a) => {
+    a.className = a.dataset.view === v ? NAV_ACTIVE : NAV_INACTIVE;
+  });
+  render();
+}
+
+/* ---------- Checkbox ---------- */
+document.getElementById("tableBody").addEventListener("change", (e) => {
+  if (!e.target.classList.contains("row-checkbox")) return;
+  const id = e.target.dataset.id;
+  e.target.checked ? selected.add(id) : selected.delete(id);
+  document.getElementById("selCount").textContent = selected.size;
+  updateSelectAll();
+});
+
+document.getElementById("selectAll").addEventListener("change", (e) => {
+  document.querySelectorAll("#tableBody .row-checkbox").forEach((cb) => {
+    cb.checked = e.target.checked;
+    e.target.checked ? selected.add(cb.dataset.id) : selected.delete(cb.dataset.id);
+  });
+  document.getElementById("selCount").textContent = selected.size;
+});
+
+/* ---------- คลิกทุกปุ่มที่มี data-act (จุดเดียว) ---------- */
+document.addEventListener("click", async (e) => {
+  const el = e.target.closest("[data-act]");
+  if (!el) {
+    if (!e.target.closest("#floatingMenu")) closePop();
+    return;
+  }
+
+  const act = el.dataset.act;
+  const f = files.find((x) => x.id === el.dataset.id);
+
+  switch (act) {
+    case "menu":
+      if (f) openPopover(el, rowMenuHtml(f), "row-" + f.id, "w-44");
+      return;
+    case "open-type":
+      return openPopover(el, typeMenuHtml(), "type", "w-44");
+    case "open-cols":
+      return openPopover(el, colsMenuHtml(), "cols", "w-52");
+    case "open-notify":
+      return openPopover(el, notifyHtml(), "notify", "w-80");
+    case "type":
+      typeFilter = el.dataset.val;
+      groupFilter = "all";
+      closePop();
+      syncTypeLabel();
+      syncGroupPills();
+      page = 1;
+      render();
+      return;
+    case "group":
+      groupFilter = el.dataset.val;
+      typeFilter = "all";
+      syncTypeLabel();
+      syncGroupPills();
+      page = 1;
+      render();
+      return;
+    case "col":
+      cols[el.dataset.val] = !cols[el.dataset.val];
+      if (openPop) openPop.innerHTML = colsMenuHtml();
+      applyColumns();
+      return;
+    case "preview":
+      closePop();
+      return previewFile(f);
+    case "purge-all":
+      closePop();
+      return requireAdmin(purgeAllTrash);
+    case "import-url":
+      closePop();
+      return importFromUrl();
+  }
+
+  closePop();
+  if (!f) return;
+  if (act === "preview") return previewFile(f);
+  if (act === "download") return downloadFile(f);
+  if (act === "share") return shareFile(f);
+  if (act === "rename") return requireAdmin(() => renameFile(f));
+  if (act === "delete") return requireAdmin(() => trashFile(f));
+  if (act === "restore") return requireAdmin(() => restoreFile(f));
+  if (act === "purge") return requireAdmin(() => purgeFile(f));
+});
+
+/* ---------- แถบความคืบหน้า ---------- */
+function ensureTransferPanel() {
+  let panel = document.getElementById("transferPanel");
+  if (!panel) {
+    panel = document.createElement("div");
+    panel.id = "transferPanel";
+    panel.className = "fixed bottom-6 left-6 w-80 max-w-[calc(100vw-3rem)] flex flex-col gap-2 z-50";
+    document.body.appendChild(panel);
+  }
+  return panel;
+}
+
+function addTransfer(name) {
+  const el = document.createElement("div");
+  el.className = "rounded-lg bg-surface-container-high border border-outline-variant shadow-xl p-3 space-y-2";
+  el.innerHTML = `
+    <div class="flex items-center justify-between gap-2">
+      <span class="font-label-md text-label-md text-on-surface truncate" data-name></span>
+      <span class="font-code-inline text-code-inline text-on-surface-variant shrink-0" data-pct>0%</span>
+    </div>
+    <div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+      <div class="bg-primary-container h-full rounded-full transition-all duration-150" data-bar style="width: 0%"></div>
+    </div>
+    <div class="flex items-center justify-between font-body-sm text-body-sm text-outline gap-2">
+      <span data-size>${t("start_dl")}</span>
+      <span data-status>${t("in_progress")}</span>
+    </div>`;
+  el.querySelector("[data-name]").textContent = name;
+  ensureTransferPanel().appendChild(el);
+  return { el, done: false };
+}
+
+function updateTransfer(tr, received, total) {
+  const bar = tr.el.querySelector("[data-bar]");
+  if (total > 0) {
+    const pct = Math.min(100, (received / total) * 100);
+    bar.style.width = pct + "%";
+    tr.el.querySelector("[data-pct]").textContent = pct.toFixed(0) + "%";
+    tr.el.querySelector("[data-size]").textContent = `${fmtSize(received)} / ${fmtSize(total)}`;
+    if (received >= total) finishTransfer(tr, true);
+  } else {
+    bar.style.width = "100%";
+    bar.classList.add("animate-pulse");
+    tr.el.querySelector("[data-pct]").textContent = "—";
+    tr.el.querySelector("[data-size]").textContent = fmtSize(received);
+  }
+}
+
+function finishTransfer(tr, ok, msg = "") {
+  if (tr.done) return;
+  tr.done = true;
+  const bar = tr.el.querySelector("[data-bar]");
+  const st = tr.el.querySelector("[data-status]");
+  bar.classList.remove("animate-pulse");
+  if (ok) {
+    bar.style.width = "100%";
+    tr.el.querySelector("[data-pct]").textContent = "100%";
+    st.textContent = t("done");
+    setTimeout(() => tr.el.remove(), 1500);
+  } else {
+    bar.classList.replace("bg-primary-container", "bg-error");
+    st.textContent = t("failed") + (msg ? ": " + msg : "");
+    st.classList.add("text-error");
+    setTimeout(() => tr.el.remove(), 6000);
+  }
+}
+
+// อ่านข้อมูลทีละส่วนพร้อมอัปเดตความคืบหน้า
+async function readWithProgress(res, tr, fallbackTotal) {
+  const total = Number(res.headers.get("content-length")) || fallbackTotal || 0;
+  if (!res.body) {
+    const b = await res.blob();
+    updateTransfer(tr, b.size, b.size);
+    return b;
+  }
+  const reader = res.body.getReader();
+  const chunks = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    updateTransfer(tr, received, total);
+  }
+  return new Blob(chunks, { type: res.headers.get("content-type") || "application/octet-stream" });
+}
+
+function saveBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+/* ---------- ดาวน์โหลด (มีเปอร์เซ็นต์) ---------- */
+async function downloadFile(f) {
+  const { data, error } = await sb.storage.from(BUCKET)
+    .createSignedUrl(f.storage_path, DOWNLOAD_LINK_SECONDS);
+  if (error) return showToast(error.message, "error");
+
+  const tr = addTransfer(f.file_name);
+  try {
+    // ดาวน์โหลดพร้อมแสดงความคืบหน้า
+    const res = await fetch(data.signedUrl);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const blob = await readWithProgress(res, tr, Number(f.file_size) || 0);
+    saveBlob(blob, f.file_name);
+  } catch (err) {
+    // ถ้าอ่านแบบมีความคืบหน้าไม่ได้ ดาวน์โหลดผ่าน iframe ที่ซ่อนไว้
+    // เพื่อไม่ให้เปิดแท็บใหม่หรือเปลี่ยนหน้า
+    startHiddenDownload(data.signedUrl);
+  }
+  finishTransfer(tr, true);
+  logActivity(t("act_download", { name: f.file_name }));
+}
+
+function startHiddenDownload(url) {
+  const frame = document.createElement("iframe");
+  frame.style.display = "none";
+  frame.src = url;
+  document.body.appendChild(frame);
+  setTimeout(() => frame.remove(), 60000);
+}
+
+/* ---------- นำเข้าจาก URL ---------- */
+async function importFromUrl() {
+  const input = prompt(t("url_prompt"));
+  if (!input) return;
+
+  let u;
+  try { u = new URL(input.trim()); } catch { return showToast(t("url_invalid"), "error"); }
+  if (u.protocol !== "https:") return showToast(t("https_only"), "error");
+
+  let name = "imported-file";
+  try { name = decodeURIComponent(u.pathname.split("/").pop() || "") || name; } catch (err) { console.warn("ชื่อไฟล์ไม่ถูกต้อง:", err.message); }
+
+  const tr = addTransfer(name);
+  try {
+    const res = await fetch(u.href);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const blob = await readWithProgress(res, tr, 0);
+    finishTransfer(tr, true);
+    await uploadFileObject(new File([blob], name, { type: blob.type }));
+  } catch (err) {
+    finishTransfer(tr, false, err.message);
+  }
+}
+
+/* ---------- แชร์ลิงก์ (ใช้ได้ 1 ชั่วโมง) ---------- */
+async function shareFile(f) {
+  const { data, error } = await sb.storage.from(BUCKET)
+    .createSignedUrl(f.storage_path, SHARE_LINK_SECONDS);
+  if (error) return showToast(error.message, "error");
+
+  const expires = new Date(Date.now() + SHARE_LINK_SECONDS * 1000).toISOString();
+  const { error: shErr } = await sb.from("share_links").insert({ file_id: f.id, expires_at: expires });
+  if (shErr) console.warn("Saving share record failed:", shErr.message);
+
+  try {
+    await navigator.clipboard.writeText(data.signedUrl);
+    showToast(t("link_copied"), "link");
+  } catch {
+    prompt(t("copy_link_prompt"), data.signedUrl);
+  }
+  logActivity(t("act_share", { name: f.file_name }));
+  loadAll();
+}
+
+/* ---------- เปลี่ยนชื่อ (ต้องมีสิทธิ์) ---------- */
+async function renameFile(f) {
+  const newName = prompt(t("new_name_prompt"), f.file_name);
+  if (!newName || !newName.trim() || newName.trim() === f.file_name) return;
+
+  const { data, error } = await sb.from("files")
+    .update({ file_name: newName.trim() })
+    .eq("id", f.id)
+    .select("id");
+  if (error) return showToast(error.code === "23505" ? t("name_taken") : error.message, "error");
+  if (!data || data.length === 0) return showToast(t("no_perm_rename"), "error");
+
+  logActivity(t("act_rename", { name: newName.trim() }));
+  showToast(t("renamed"));
+  loadAll();
+}
+
+/* ---------- ย้ายไปถังขยะ / กู้คืน / ลบถาวร (ต้องมีสิทธิ์) ---------- */
+async function trashFile(f) {
+  if (!confirm(t("confirm_trash"))) return;
+  // ใช้ฟังก์ชันฝั่งฐานข้อมูลแทนการ UPDATE ตรง เพื่อไม่ให้ RLS ทำให้คำสั่งเงียบ ๆ ไม่แก้แถวใด
+  const { data, error } = await sb.rpc("set_trashed", { p_id: f.id, p_trash: true });
+  if (error) return showToast(error.message, "error");
+  if (!data) return showToast(t("no_perm_trash"), "error");
+  logActivity(t("act_trash", { name: f.file_name }));
+  showToast(t("moved_trash"));
+  loadAll();
+}
+
+async function restoreFile(f) {
+  const { data, error } = await sb.rpc("set_trashed", { p_id: f.id, p_trash: false });
+  if (error) return showToast(error.code === "23505" ? t("name_taken") : error.message, "error");
+  if (!data) return showToast(t("no_perm_restore"), "error");
+  logActivity(t("act_restore", { name: f.file_name }));
+  showToast(t("restored"));
+  loadAll();
+}
+
+async function purgeFile(f) {
+  if (!confirm(t("confirm_purge"))) return;
+  const { data, error } = await sb.from("files").delete().eq("id", f.id).select("id");
+  if (error) return showToast(error.message, "error");
+  if (!data || data.length === 0) return showToast(t("no_perm_delete"), "error");
+
+  await sb.storage.from(BUCKET).remove([f.storage_path]);
+  logActivity(t("act_purge", { name: f.file_name }));
+  showToast(t("purged"));
+  loadAll();
+}
+
+
+/* ---------- ลบทั้งหมดในถังขยะ (เฉพาะผู้ดูแล) ---------- */
+async function purgeAllTrash() {
+  const count = files.filter((f) => f.deleted_at).length;
+  if (!count) return showToast(t("empty_trash"), "error");
+  if (!confirm(t("confirm_purge_all", { n: count }))) return;
+
+  // ฐานข้อมูลลบแถวทั้งหมดในถังขยะ แล้วคืนรายการไฟล์ที่ต้องลบออกจาก Storage
+  const { data, error } = await sb.rpc("purge_trash");
+  if (error) return showToast(error.message, "error");
+  const paths = data || [];
+  if (paths.length) await sb.storage.from(BUCKET).remove(paths);
+  logActivity(t("act_purge_all", { n: paths.length }));
+  showToast(t("purged_all"));
+  loadAll();
+}
+
+/* ---------- ดูตัวอย่างไฟล์ ---------- */
+let previewed = null;
+
+async function previewFile(f) {
+  const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(f.storage_path, 600);
+  if (error) return showToast(error.message, "error");
+  const url = data.signedUrl;
+  const ext = (f.file_name.split(".").pop() || "").toLowerCase();
+  let html;
+  if (["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"].includes(ext)) {
+    html = `<img src="${url}" alt="" class="mx-auto max-h-[70vh] max-w-full rounded-lg"/>`;
+  } else if (ext === "pdf") {
+    html = `<iframe src="${url}" class="w-full h-[70vh] rounded-lg bg-white"></iframe>`;
+  } else if (["mp4", "webm", "mov"].includes(ext)) {
+    html = `<video src="${url}" controls class="w-full max-h-[70vh] rounded-lg"></video>`;
+  } else if (["txt", "md", "csv", "json", "js", "html", "css"].includes(ext) && f.file_size < 2 * 1024 * 1024) {
+    try {
+      const txt = await (await fetch(url)).text();
+      html = `<pre class="whitespace-pre-wrap font-code-inline text-code-inline text-on-surface">${esc(txt)}</pre>`;
+    } catch {
+      html = `<div class="text-center text-outline py-12">${esc(t("preview_unsupported"))}</div>`;
+    }
+  } else {
+    html = `<div class="text-center text-outline py-12">${esc(t("preview_unsupported"))}</div>`;
+  }
+  previewed = f;
+  document.getElementById("previewTitle").textContent = f.file_name;
+  document.getElementById("previewBody").innerHTML = html;
+  const m = document.getElementById("previewModal");
+  m.classList.remove("hidden");
+  m.classList.add("flex");
+}
+
+function closePreview() {
+  const m = document.getElementById("previewModal");
+  m.classList.add("hidden");
+  m.classList.remove("flex");
+  document.getElementById("previewBody").innerHTML = "";
+  previewed = null;
+}
+
+document.getElementById("previewCloseBtn").addEventListener("click", closePreview);
+document.getElementById("previewModal").addEventListener("click", (e) => {
+  if (e.target.id === "previewModal") closePreview();
+});
+document.getElementById("previewDownloadBtn").addEventListener("click", () => {
+  if (previewed) downloadFile(previewed);
+});
+
+/* ---------- อัปโหลด (ไม่ต้องล็อกอิน) ---------- */
+async function getDefaultProjectId() {
+  if (projects.length) return projects[0].id;
+
+  const { data: found, error: findErr } = await sb.from("projects")
+    .select("*").eq("name", DEFAULT_PROJECT_NAME).limit(1).maybeSingle();
+  if (findErr) throw new Error(findErr.message);
+  if (found) {
+    projects.unshift(found);
+    return found.id;
+  }
+
+  const { data: created, error } = await sb.from("projects")
+    .insert({ name: DEFAULT_PROJECT_NAME, category: "General" })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  projects.unshift(created);
+  return created.id;
+}
+
+/* ---------- ป้องกันไฟล์ซ้ำ ---------- */
+// คำนวณ SHA-256 ของเนื้อหาไฟล์ (ต้องเปิดผ่าน https หรือ localhost)
+async function sha256Hex(file) {
+  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// ถ้าชื่อซ้ำในโปรเจกต์ (ไม่สนตัวพิมพ์เล็ก-ใหญ่) เติม (2), (3) ต่อท้ายชื่อ
+function uniqueName(name, projectId) {
+  const taken = new Set(
+    files.filter((f) => !f.deleted_at && f.project_id === projectId).map((f) => f.file_name.toLowerCase())
+  );
+  if (!taken.has(name.toLowerCase())) return name;
+  const dot = name.lastIndexOf(".");
+  const base = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot) : "";
+  for (let i = 2; i < 10000; i++) {
+    const candidate = `${base} (${i})${ext}`;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+  return name;
+}
+
+async function uploadFileObject(file) {
+  if (file.size > MAX_FILE_SIZE) return showToast(t("file_too_big"), "error");
+
+  let projectId;
+  try {
+    projectId = await getDefaultProjectId();
+  } catch (err) {
+    return showToast(t("prep_failed", { msg: err.message }), "error");
+  }
+
+  showToast(t("uploading"), "cloud_upload");
+
+  // 1) เนื้อหาซ้ำกับไฟล์ที่มีอยู่ (ที่ยังไม่อยู่ในถังขยะ) จะไม่อัปโหลด
+  let hash = null;
+  try {
+    hash = await sha256Hex(file);
+  } catch (err) {
+    console.warn("คำนวณ hash ไม่สำเร็จ (ต้องเปิดผ่าน https):", err.message);
+  }
+  if (hash) {
+    const { data: dup, error: dupErr } = await sb.from("files")
+      .select("file_name").eq("content_hash", hash).is("deleted_at", null).limit(1);
+    if (!dupErr && dup && dup.length) return showToast(t("dup_content", { name: dup[0].file_name }), "warning");
+  }
+
+  // 2) ชื่อซ้ำ -> บันทึกด้วยชื่อใหม่ที่ไม่ซ้ำ
+  const finalName = uniqueName(file.name, projectId);
+
+  const dot = file.name.lastIndexOf(".");
+  const ext = dot > 0 ? file.name.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+  const storagePath = `${projectId}/${crypto.randomUUID()}${ext ? "." + ext : ""}`;
+
+  const { error: upErr } = await sb.storage.from(BUCKET).upload(storagePath, file, {
+    contentType: file.type || "application/octet-stream",
+  });
+  if (upErr) return showToast(upErr.message, "error");
+
+  const { error } = await sb.from("files").insert({
+    project_id: projectId,
+    file_name: finalName,
+    file_type: file.type || null,
+    file_size: file.size,
+    storage_path: storagePath,
+    content_hash: hash,
+    uploaded_by_email: fbUser?.email || null,
+    uploaded_by_name: fbUser?.displayName || fbUser?.email || null,
+    url: "",
+  });
+  if (error) {
+    await sb.storage.from(BUCKET).remove([storagePath]);
+    // 23505 = ละเมิด unique index ที่ฐานข้อมูล (กันกรณีอัปโหลดพร้อมกัน)
+    return showToast(error.code === "23505" ? t("dup_db") : error.message, "error");
+  }
+  logActivity(t("act_upload", { name: finalName }));
+  showToast(finalName !== file.name ? t("renamed_auto", { name: finalName }) : t("upload_ok"));
+  loadAll();
+}
+
+document.querySelectorAll("[data-upload]").forEach((btn) => {
+  btn.addEventListener("click", () => document.getElementById("fileInputHidden").click());
+});
+
+document.getElementById("fileInputHidden").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (file) uploadFileObject(file);
+});
+
+/* ---------- โน้ต (แท็กในหน้า room-work) ---------- */
+const NT_RGB = { yellow: "250 204 21", green: "74 222 128", blue: "96 165 250", pink: "244 114 182" };
+let ntRows = [];
+let ntColorFilter = "all";
+let ntTagFilter = "";
+let ntEditing = null;
+let ntViewing = null;
+
+const ntCanEdit = (n) => !!fbUser && ((n.created_by || "").toLowerCase() === (fbUser.email || "").toLowerCase() || currentRole === "admin");
+const ntChipCls = (on) => "h-8 px-3 rounded-full text-label-sm font-label-sm border transition-colors " +
+  (on ? "border-primary/60 bg-primary-container/30 text-on-surface" : "border-white/15 text-on-surface-variant hover:text-on-surface");
+const ntShow = (id, on) => {
+  const el = document.getElementById(id);
+  el.classList.toggle("hidden", !on);
+  el.classList.toggle("flex", on);
+};
+const ntMsg = (s) => { document.getElementById("ntMsg").textContent = s; };
+
+async function loadNotes() {
+  const { data, error } = await sb.from("notes").select("*").order("updated_at", { ascending: false });
+  if (error) return showToast(error.message, "error");
+  ntRows = data || [];
+  ntRenderFilters();
+  ntRender();
+}
+
+function ntRenderFilters() {
+  const topics = [...new Set(ntRows.map((n) => n.topic).filter(Boolean))].sort();
+  document.getElementById("ntTopicList").innerHTML = topics.map((x) => `<option value="${esc(x)}">`).join("");
+  const counts = {};
+  ntRows.forEach((n) => (n.tags || []).forEach((g) => (counts[g] = (counts[g] || 0) + 1)));
+  document.getElementById("ntTagChips").innerHTML = [
+    `<button type="button" data-nt-tag="" class="${ntChipCls(ntTagFilter === "")}">${esc(t("nt_all_tags"))}</button>`,
+    ...Object.keys(counts).sort().map((g) =>
+      `<button type="button" data-nt-tag="${esc(g)}" class="${ntChipCls(ntTagFilter === g)}">#${esc(g)} <span class="opacity-60">${counts[g]}</span></button>`),
+  ].join("");
+  document.querySelectorAll("#ntColorPills [data-nt-color]").forEach((b) => {
+    b.className = ntChipCls(b.dataset.ntColor === ntColorFilter);
+  });
+}
+
+function ntRowHtml(n) {
+  const c = n.color && NT_RGB[n.color];
+  const style = c ? `background:linear-gradient(90deg, rgb(${c} / 0.14), transparent 70%);border-left:3px solid rgb(${c})` : "";
+  const dot = c
+    ? `<span class="inline-block w-2.5 h-2.5 rounded-full" style="background:rgb(${c})"></span>`
+    : `<span class="inline-block w-2.5 h-2.5 rounded-full border border-white/25"></span>`;
+  const tags = (n.tags || []).map((g) =>
+    `<span class="px-2 py-0.5 rounded-full text-[11px] bg-white/10 border border-white/20 text-on-surface-variant">#${esc(g)}</span>`).join("");
+  return `
+  <div data-nt-id="${esc(n.id)}" class="grid grid-cols-[1fr_auto] md:grid-cols-[2fr_1fr_1fr_auto] gap-4 items-center px-4 py-3 border-b border-white/10 hover:bg-white/5 cursor-pointer" style="${style}">
+    <div class="min-w-0">
+      <div class="font-label-md text-label-md text-on-surface truncate">${esc(n.title || t("nt_untitled"))}</div>
+      <div class="font-body-sm text-body-sm text-outline truncate">${esc((n.body || "").slice(0, 90))}</div>
+    </div>
+    <div class="hidden md:flex flex-wrap gap-1">${tags}</div>
+    <div class="hidden md:block font-body-sm text-body-sm text-outline">${fmtDate(n.updated_at)}</div>
+    <div class="flex items-center justify-end gap-2">${dot}<button type="button" data-nt-view="${esc(n.id)}" class="text-label-sm font-label-sm text-primary hover:underline">${esc(t("nt_view"))}</button></div>
+  </div>`;
+}
+
+function ntRender() {
+  const q = document.getElementById("ntSearch").value.trim().toLowerCase();
+  const list = ntRows.filter((n) =>
+    (ntColorFilter === "all" || (n.color || "none") === ntColorFilter) &&
+    (!ntTagFilter || (n.tags || []).includes(ntTagFilter)) &&
+    (!q || [n.title, n.body, n.topic, ...(n.tags || [])].join(" ").toLowerCase().includes(q)));
+  const groups = {};
+  list.forEach((n) => { const k = n.topic || "__none"; (groups[k] = groups[k] || []).push(n); });
+  const keys = Object.keys(groups).sort((x, y) => (x === "__none") - (y === "__none") || x.localeCompare(y));
+  document.getElementById("ntList").innerHTML = keys.map((k) => `
+    <div>
+      <div class="flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/10">
+        <span class="font-label-md text-label-md font-semibold text-on-surface">${k === "__none" ? esc(t("nt_no_topic")) : esc(k)}
+          <span class="text-outline font-body-sm">(${groups[k].length})</span></span>
+        <button type="button" data-nt-new-in="${k === "__none" ? "" : esc(k)}" class="text-label-sm font-label-sm text-primary hover:underline">+ ${esc(t("nt_add_here"))}</button>
+      </div>
+      ${groups[k].map(ntRowHtml).join("")}
+    </div>`).join("");
+  document.getElementById("ntEmpty").classList.toggle("hidden", list.length > 0);
+}
+
+function ntOpenEditor(n = null, topic = "") {
+  if (!fbUser) return showLogin(t("need_login_enter"));
+  ntEditing = n;
+  document.getElementById("ntEditorTitle").textContent = n ? t("nt_edit") : t("nt_new");
+  document.getElementById("ntTitle").value = n?.title || "";
+  document.getElementById("ntTopic").value = n?.topic || topic || "";
+  document.getElementById("ntTags").value = (n?.tags || []).join(", ");
+  document.getElementById("ntColor").value = n?.color || "none";
+  document.getElementById("ntBody").value = n?.body || "";
+  ntMsg("");
+  document.getElementById("ntDelete").style.display = n && ntCanEdit(n) ? "" : "none";
+  ntShow("ntEditor", true);
+}
+
+async function ntSave(e) {
+  e.preventDefault();
+  const title = document.getElementById("ntTitle").value.trim();
+  const body = document.getElementById("ntBody").value;
+  if (!title && !body.trim()) return ntMsg(t("nt_need_text"));
+  const payload = {
+    title,
+    body,
+    topic: document.getElementById("ntTopic").value.trim() || null,
+    tags: [...new Set(document.getElementById("ntTags").value.split(",").map((s) => s.trim().replace(/^#/, "")).filter(Boolean))],
+    color: document.getElementById("ntColor").value || "none",
+    updated_at: new Date().toISOString(),
+  };
+  const res = ntEditing
+    ? await sb.from("notes").update(payload).eq("id", ntEditing.id).select("id")
+    : await sb.from("notes").insert({ ...payload, created_by: fbUser.email }).select("id");
+  if (res.error) return ntMsg(res.error.message);
+  if (!res.data || !res.data.length) return ntMsg(t("nt_no_perm"));
+  ntShow("ntEditor", false);
+  showToast(t("nt_saved"));
+  loadNotes();
+}
+
+async function ntRemove(n) {
+  if (!n) return;
+  if (!confirm(t("nt_confirm_delete"))) return;
+  const { data, error } = await sb.from("notes").delete().eq("id", n.id).select("id");
+  if (error) return ntMsg(error.message);
+  if (!data || !data.length) return ntMsg(t("nt_no_perm"));
+  ntShow("ntEditor", false);
+  ntShow("ntView", false);
+  showToast(t("nt_deleted"));
+  loadNotes();
+}
+
+function ntOpenViewById(id) {
+  try {
+    const n = ntRows.find((x) => String(x.id) === String(id));
+    if (!n) return showToast("ไม่พบโน้ตนี้", "error");
+    ntOpenView(n);
+  } catch (err) {
+    showToast("เปิดโน้ตไม่ได้: " + err.message, "error");
+  }
+}
+
+function ntOpenView(n) {
+  if (!n) return;
+  ntViewing = n;
+  const c = n.color && NT_RGB[n.color];
+  document.getElementById("ntViewBody").innerHTML = `
+    <div class="flex items-start justify-between gap-3">
+      <h2 class="font-headline-md text-headline-md font-semibold text-on-surface break-words">${esc(n.title || "")}</h2>
+      ${c ? `<span class="shrink-0 w-3 h-3 rounded-full mt-2" style="background:rgb(${c})"></span>` : ""}
+    </div>
+    <div class="flex flex-wrap gap-2 text-body-sm text-outline">
+      ${n.topic ? `<span>${esc(n.topic)}</span>` : ""}
+      <span>${fmtDate(n.updated_at)}</span>
+      ${n.created_by ? `<span>· ${esc(n.created_by)}</span>` : ""}
+    </div>
+    <div class="flex flex-wrap gap-1.5">${(n.tags || []).map((g) =>
+      `<span class="px-2 py-0.5 rounded-full text-[11px] bg-white/10 border border-white/20 text-on-surface-variant">#${esc(g)}</span>`).join("")}</div>
+    <div class="whitespace-pre-wrap font-body-md text-body-md text-on-surface leading-relaxed">${esc(n.body || "")}</div>`;
+  const can = ntCanEdit(n);
+  document.getElementById("ntViewEdit").style.display = can ? "" : "none";
+  document.getElementById("ntViewDelete").style.display = can ? "" : "none";
+  ntShow("ntView", true);
+}
+
+document.getElementById("ntNewBtn").addEventListener("click", () => ntOpenEditor());
+document.getElementById("ntForm").addEventListener("submit", ntSave);
+document.getElementById("ntCancel").addEventListener("click", () => ntShow("ntEditor", false));
+document.getElementById("ntDelete").addEventListener("click", () => ntRemove(ntEditing));
+document.getElementById("ntViewClose").addEventListener("click", () => ntShow("ntView", false));
+document.getElementById("ntViewEdit").addEventListener("click", () => {
+  const n = ntViewing;
+  ntShow("ntView", false);
+  ntOpenEditor(n);
+});
+document.getElementById("ntViewDelete").addEventListener("click", () => ntRemove(ntViewing));
+document.getElementById("ntSearch").addEventListener("input", ntRender);
+document.getElementById("ntPanel").addEventListener("click", (e) => {
+  const tag = e.target.closest("[data-nt-tag]");
+  if (tag) { ntTagFilter = tag.dataset.ntTag; ntRenderFilters(); ntRender(); return; }
+  const col = e.target.closest("[data-nt-color]");
+  if (col) { ntColorFilter = col.dataset.ntColor; ntRenderFilters(); ntRender(); return; }
+  const add = e.target.closest("[data-nt-new-in]");
+  if (add) return ntOpenEditor(null, add.dataset.ntNewIn);
+  const view = e.target.closest("[data-nt-view]");
+  if (view) return ntOpenViewById(view.dataset.ntView);
+  const row = e.target.closest("[data-nt-id]");
+  if (row) return ntOpenViewById(row.dataset.ntId);
+});
+
+/* ---------- ค้นหา / แบ่งหน้า / อื่น ๆ ---------- */
+document.getElementById("fileSearch").addEventListener("input", (e) => {
+  searchQ = e.target.value.trim();
+  page = 1;
+  render();
+});
+
+document.getElementById("perPage").addEventListener("change", (e) => {
+  perPage = Number(e.target.value);
+  page = 1;
+  render();
+});
+document.getElementById("firstPage").addEventListener("click", () => { page = 1; render(); });
+document.getElementById("prevPage").addEventListener("click", () => { page--; render(); });
+document.getElementById("nextPage").addEventListener("click", () => { page++; render(); });
+document.getElementById("lastPage").addEventListener("click", () => {
+  page = Math.max(1, Math.ceil(shown.length / perPage));
+  render();
+});
+
+document.getElementById("refreshBtn").addEventListener("click", () => loadAll());
+
+function applyTheme(name) {
+  window.__setTheme(name);
+  const btn = document.getElementById("themeToggleBtn");
+  btn.querySelector(".material-symbols-outlined").textContent = name === "dark" ? "light_mode" : "dark_mode";
+  btn.title = name === "dark" ? t("theme_to_light") : t("theme_to_dark");
+}
+
+document.getElementById("themeToggleBtn").addEventListener("click", () => {
+  applyTheme(localStorage.getItem("theme") === "light" ? "dark" : "light");
+});
+
+window.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+    e.preventDefault();
+    document.getElementById("fileSearch")?.focus();
+  }
+});
+
+/* ---------- เริ่มต้น: ถอด onclick เดโมของปุ่มและผูกฟังก์ชันจริง ---------- */
+function init() {
+  const byKey = (key) => {
+    const el = document.querySelector('[data-i18n="' + key + '"]');
+    return el ? el.closest("button") : null;
+  };
+  const setAct = (el, act) => {
+    if (!el) return;
+    el.removeAttribute("onclick");
+    el.dataset.act = act;
+  };
+
+  typeBtn = byKey("type_all");
+  setAct(typeBtn, "open-type");
+  setAct(byKey("columns"), "open-cols");
+  setAct(document.querySelector('button[title="View columns"]'), "open-cols");
+  setAct(document.querySelector('button[title="Notifications"]'), "open-notify");
+  setAct(byKey("import_cloud"), "import-url");
+
+  // ทำให้เมนูด้านบนแสดงบนมือถือด้วย (เลื่อนแนวนอนได้)
+  const nav = document.getElementById("headerNav");
+  if (nav) nav.className = "flex items-center gap-4 ml-2 whitespace-nowrap";
+  document.querySelectorAll("#headerNav a[data-view]").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      setView(a.dataset.view);
+    });
+  });
+
+  syncTypeLabel();
+  syncGroupPills();
+  updateLangLabel();
+  setView("files");
+  applyTheme(localStorage.getItem("theme") === "light" ? "light" : "dark");
+  updateProfile();
+  routeFromHash();
+}
+
+function updateLangLabel() {
+  const el = document.getElementById("langLabel");
+  if (el) el.textContent = window.getLang() === "th" ? "EN" : "ไทย";
+}
+
+window.addEventListener("langchange", () => {
+  updateLangLabel();
+  applyTheme(localStorage.getItem("theme") === "light" ? "light" : "dark");
+  syncTypeLabel();
+  syncGroupPills();
+  refreshPermission();
+  if (!viewWorkspace.classList.contains("hidden")) {
+    render();
+    loadUsage();
+  }
+});
+
+document.getElementById("langToggleBtn").addEventListener("click", () => {
+  window.setLang(window.getLang() === "th" ? "en" : "th");
+});
+
+init();
+
+/* ---------- โหมดตรวจระบบ: เปิดด้วย ?debug=1 ที่ท้าย URL แล้วแสดงผลเป็นกล่องข้อความ ---------- */
+async function runDebugChecks() {
+  const lines = [];
+  const show = (label, r) => lines.push(label + ": " + JSON.stringify(r).slice(0, 400));
+  show("login", fbUser ? (fbUser.email || "มีผู้ใช้") : "ยังไม่ได้ล็อกอิน");
+  show("is_allowed", await sb.rpc("is_allowed"));
+  show("my_role", await sb.rpc("my_role"));
+  show("files", await sb.from("files").select("id,file_name").limit(3));
+  show("usage", await sb.rpc("get_storage_usage"));
+  show("notes", await sb.from("notes").select("id,title,created_by").limit(5));
+  alert(lines.join("\n\n"));
+}
+if (new URLSearchParams(location.search).get("debug") === "1") {
+  setTimeout(runDebugChecks, 3000);
+}
