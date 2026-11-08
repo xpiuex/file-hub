@@ -1405,6 +1405,7 @@ async function runDebugChecks() {
   show("my_role", await sb.rpc("my_role"));
   show("files", await sb.from("files").select("id,file_name").limit(3));
   show("usage", await sb.rpc("get_storage_usage"));
+  show("notes", await sb.from("notes").select("id,title,created_by").limit(5));
   alert(lines.join("\n\n"));
 }
 if (new URLSearchParams(location.search).get("debug") === "1") {
