@@ -422,6 +422,7 @@ function setPage(name) {
   });
   setSidebarOpen(false);
   if (name === "workspace") loadAll();
+  document.getElementById("ntPanel").classList.toggle("hidden", !(name === "workspace" && view === "notes"));
 }
 
 function routeFromHash() {
@@ -622,6 +623,11 @@ function setView(v) {
   view = v;
   page = 1;
   selected.clear();
+  // note เป็นแท็บในหน้า room-work เดียวกัน: สลับเนื้อหาไฟล์กับหน้าโน้ต
+  const isNotes = v === "notes";
+  document.getElementById("fileContent").classList.toggle("hidden", isNotes);
+  document.getElementById("ntPanel").classList.toggle("hidden", !isNotes);
+  if (isNotes) loadNotes();
   document.getElementById("purgeAllBtn").style.display = v === "trash" ? "" : "none";
   document.querySelectorAll("#headerNav a[data-view]").forEach((a) => {
     a.className = a.dataset.view === v ? NAV_ACTIVE : NAV_INACTIVE;
@@ -1110,6 +1116,183 @@ document.getElementById("fileInputHidden").addEventListener("change", (e) => {
   const file = e.target.files[0];
   e.target.value = "";
   if (file) uploadFileObject(file);
+});
+
+/* ---------- โน้ต (แท็กในหน้า room-work) ---------- */
+const NT_RGB = { yellow: "250 204 21", green: "74 222 128", blue: "96 165 250", pink: "244 114 182" };
+let ntRows = [];
+let ntColorFilter = "all";
+let ntTagFilter = "";
+let ntEditing = null;
+let ntViewing = null;
+
+const ntCanEdit = (n) => !!fbUser && ((n.created_by || "").toLowerCase() === (fbUser.email || "").toLowerCase() || currentRole === "admin");
+const ntChipCls = (on) => "h-8 px-3 rounded-full text-label-sm font-label-sm border transition-colors " +
+  (on ? "border-primary/60 bg-primary-container/30 text-on-surface" : "border-white/15 text-on-surface-variant hover:text-on-surface");
+const ntShow = (id, on) => {
+  const el = document.getElementById(id);
+  el.classList.toggle("hidden", !on);
+  el.classList.toggle("flex", on);
+};
+const ntMsg = (s) => { document.getElementById("ntMsg").textContent = s; };
+
+async function loadNotes() {
+  const { data, error } = await sb.from("notes").select("*").order("updated_at", { ascending: false });
+  if (error) return showToast(error.message, "error");
+  ntRows = data || [];
+  ntRenderFilters();
+  ntRender();
+}
+
+function ntRenderFilters() {
+  const topics = [...new Set(ntRows.map((n) => n.topic).filter(Boolean))].sort();
+  document.getElementById("ntTopicList").innerHTML = topics.map((x) => `<option value="${esc(x)}">`).join("");
+  const counts = {};
+  ntRows.forEach((n) => (n.tags || []).forEach((g) => (counts[g] = (counts[g] || 0) + 1)));
+  document.getElementById("ntTagChips").innerHTML = [
+    `<button type="button" data-nt-tag="" class="${ntChipCls(ntTagFilter === "")}">${esc(t("nt_all_tags"))}</button>`,
+    ...Object.keys(counts).sort().map((g) =>
+      `<button type="button" data-nt-tag="${esc(g)}" class="${ntChipCls(ntTagFilter === g)}">#${esc(g)} <span class="opacity-60">${counts[g]}</span></button>`),
+  ].join("");
+  document.querySelectorAll("#ntColorPills [data-nt-color]").forEach((b) => {
+    b.className = ntChipCls(b.dataset.ntColor === ntColorFilter);
+  });
+}
+
+function ntRowHtml(n) {
+  const c = n.color && NT_RGB[n.color];
+  const style = c ? `background:linear-gradient(90deg, rgb(${c} / 0.14), transparent 70%);border-left:3px solid rgb(${c})` : "";
+  const dot = c
+    ? `<span class="inline-block w-2.5 h-2.5 rounded-full" style="background:rgb(${c})"></span>`
+    : `<span class="inline-block w-2.5 h-2.5 rounded-full border border-white/25"></span>`;
+  const tags = (n.tags || []).map((g) =>
+    `<span class="px-2 py-0.5 rounded-full text-[11px] bg-white/10 border border-white/20 text-on-surface-variant">#${esc(g)}</span>`).join("");
+  return `
+  <div data-nt-id="${esc(n.id)}" class="grid grid-cols-[1fr_auto] md:grid-cols-[2fr_1fr_1fr_auto] gap-4 items-center px-4 py-3 border-b border-white/10 hover:bg-white/5 cursor-pointer" style="${style}">
+    <div class="min-w-0">
+      <div class="font-label-md text-label-md text-on-surface truncate">${esc(n.title || t("nt_untitled"))}</div>
+      <div class="font-body-sm text-body-sm text-outline truncate">${esc((n.body || "").slice(0, 90))}</div>
+    </div>
+    <div class="hidden md:flex flex-wrap gap-1">${tags}</div>
+    <div class="hidden md:block font-body-sm text-body-sm text-outline">${fmtDate(n.updated_at)}</div>
+    <div class="flex items-center justify-end gap-2">${dot}<span class="text-label-sm font-label-sm text-primary">${esc(t("nt_view"))}</span></div>
+  </div>`;
+}
+
+function ntRender() {
+  const q = document.getElementById("ntSearch").value.trim().toLowerCase();
+  const list = ntRows.filter((n) =>
+    (ntColorFilter === "all" || (n.color || "none") === ntColorFilter) &&
+    (!ntTagFilter || (n.tags || []).includes(ntTagFilter)) &&
+    (!q || [n.title, n.body, n.topic, ...(n.tags || [])].join(" ").toLowerCase().includes(q)));
+  const groups = {};
+  list.forEach((n) => { const k = n.topic || "__none"; (groups[k] = groups[k] || []).push(n); });
+  const keys = Object.keys(groups).sort((x, y) => (x === "__none") - (y === "__none") || x.localeCompare(y));
+  document.getElementById("ntList").innerHTML = keys.map((k) => `
+    <div>
+      <div class="flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/10">
+        <span class="font-label-md text-label-md font-semibold text-on-surface">${k === "__none" ? esc(t("nt_no_topic")) : esc(k)}
+          <span class="text-outline font-body-sm">(${groups[k].length})</span></span>
+        <button type="button" data-nt-new-in="${k === "__none" ? "" : esc(k)}" class="text-label-sm font-label-sm text-primary hover:underline">+ ${esc(t("nt_add_here"))}</button>
+      </div>
+      ${groups[k].map(ntRowHtml).join("")}
+    </div>`).join("");
+  document.getElementById("ntEmpty").classList.toggle("hidden", list.length > 0);
+}
+
+function ntOpenEditor(n = null, topic = "") {
+  if (!fbUser) return showLogin(t("need_login_enter"));
+  ntEditing = n;
+  document.getElementById("ntEditorTitle").textContent = n ? t("nt_edit") : t("nt_new");
+  document.getElementById("ntTitle").value = n?.title || "";
+  document.getElementById("ntTopic").value = n?.topic || topic || "";
+  document.getElementById("ntTags").value = (n?.tags || []).join(", ");
+  document.getElementById("ntColor").value = n?.color || "none";
+  document.getElementById("ntBody").value = n?.body || "";
+  ntMsg("");
+  document.getElementById("ntDelete").style.display = n && ntCanEdit(n) ? "" : "none";
+  ntShow("ntEditor", true);
+}
+
+async function ntSave(e) {
+  e.preventDefault();
+  const title = document.getElementById("ntTitle").value.trim();
+  const body = document.getElementById("ntBody").value;
+  if (!title && !body.trim()) return ntMsg(t("nt_need_text"));
+  const payload = {
+    title,
+    body,
+    topic: document.getElementById("ntTopic").value.trim() || null,
+    tags: [...new Set(document.getElementById("ntTags").value.split(",").map((s) => s.trim().replace(/^#/, "")).filter(Boolean))],
+    color: document.getElementById("ntColor").value || "none",
+    updated_at: new Date().toISOString(),
+  };
+  const res = ntEditing
+    ? await sb.from("notes").update(payload).eq("id", ntEditing.id).select("id")
+    : await sb.from("notes").insert({ ...payload, created_by: fbUser.email }).select("id");
+  if (res.error) return ntMsg(res.error.message);
+  if (!res.data || !res.data.length) return ntMsg(t("nt_no_perm"));
+  ntShow("ntEditor", false);
+  showToast(t("nt_saved"));
+  loadNotes();
+}
+
+async function ntRemove(n) {
+  if (!n) return;
+  if (!confirm(t("nt_confirm_delete"))) return;
+  const { data, error } = await sb.from("notes").delete().eq("id", n.id).select("id");
+  if (error) return ntMsg(error.message);
+  if (!data || !data.length) return ntMsg(t("nt_no_perm"));
+  ntShow("ntEditor", false);
+  ntShow("ntView", false);
+  showToast(t("nt_deleted"));
+  loadNotes();
+}
+
+function ntOpenView(n) {
+  if (!n) return;
+  ntViewing = n;
+  const c = n.color && NT_RGB[n.color];
+  document.getElementById("ntViewBody").innerHTML = `
+    <div class="flex items-start justify-between gap-3">
+      <h2 class="font-headline-md text-headline-md font-semibold text-on-surface break-words">${esc(n.title || "")}</h2>
+      ${c ? `<span class="shrink-0 w-3 h-3 rounded-full mt-2" style="background:rgb(${c})"></span>` : ""}
+    </div>
+    <div class="flex flex-wrap gap-2 text-body-sm text-outline">
+      ${n.topic ? `<span>${esc(n.topic)}</span>` : ""}
+      <span>${fmtDate(n.updated_at)}</span>
+      ${n.created_by ? `<span>· ${esc(n.created_by)}</span>` : ""}
+    </div>
+    <div class="flex flex-wrap gap-1.5">${(n.tags || []).map((g) =>
+      `<span class="px-2 py-0.5 rounded-full text-[11px] bg-white/10 border border-white/20 text-on-surface-variant">#${esc(g)}</span>`).join("")}</div>
+    <div class="whitespace-pre-wrap font-body-md text-body-md text-on-surface leading-relaxed">${esc(n.body || "")}</div>`;
+  const can = ntCanEdit(n);
+  document.getElementById("ntViewEdit").style.display = can ? "" : "none";
+  document.getElementById("ntViewDelete").style.display = can ? "" : "none";
+  ntShow("ntView", true);
+}
+
+document.getElementById("ntNewBtn").addEventListener("click", () => ntOpenEditor());
+document.getElementById("ntForm").addEventListener("submit", ntSave);
+document.getElementById("ntCancel").addEventListener("click", () => ntShow("ntEditor", false));
+document.getElementById("ntDelete").addEventListener("click", () => ntRemove(ntEditing));
+document.getElementById("ntViewClose").addEventListener("click", () => ntShow("ntView", false));
+document.getElementById("ntViewEdit").addEventListener("click", () => {
+  const n = ntViewing;
+  ntShow("ntView", false);
+  ntOpenEditor(n);
+});
+document.getElementById("ntViewDelete").addEventListener("click", () => ntRemove(ntViewing));
+document.getElementById("ntSearch").addEventListener("input", ntRender);
+document.getElementById("ntPanel").addEventListener("click", (e) => {
+  const tag = e.target.closest("[data-nt-tag]");
+  if (tag) { ntTagFilter = tag.dataset.ntTag; ntRenderFilters(); ntRender(); return; }
+  const col = e.target.closest("[data-nt-color]");
+  if (col) { ntColorFilter = col.dataset.ntColor; ntRenderFilters(); ntRender(); return; }
+  const add = e.target.closest("[data-nt-new-in]");
+  if (add) return ntOpenEditor(null, add.dataset.ntNewIn);
+  const row = e.target.closest("[data-nt-id]");
+  if (row) ntOpenView(ntRows.find((n) => n.id === row.dataset.ntId));
 });
 
 /* ---------- ค้นหา / แบ่งหน้า / อื่น ๆ ---------- */
