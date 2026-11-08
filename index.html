@@ -65,6 +65,7 @@
 <a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="shared"><span data-i18n="nav_shared">Shared</span></a>
 <a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="recent"><span data-i18n="nav_recent">Recent</span></a>
 <a class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" href="#" data-view="trash"><span data-i18n="nav_trash">Trash</span></a>
+<a href="#" data-view="notes" class="text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface"><span>note</span></a>
 </nav>
 <div id="topRight" class="flex flex-1 items-center justify-end gap-2">
 <button type="button" id="langToggleBtn" data-i18n-title="lang_btn_title" class="h-8 px-2 rounded-lg border border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-sm text-label-sm transition-colors active:scale-[0.98]"><span id="langLabel">EN</span></button>
@@ -324,7 +325,36 @@
 
 </div>
 </section>
-
+<section id="ntPanel" class="hidden">
+<div class="max-w-[1200px] w-full mx-auto p-4 md:p-6 lg:p-8 space-y-6">
+<div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+<div>
+<h1 class="font-headline-lg text-headline-lg font-semibold tracking-tight text-on-surface" data-i18n="nt_title">โน้ต</h1>
+<p class="font-body-md text-body-md text-on-surface-variant" data-i18n="nt_desc">เขียนบันทึก จัดกลุ่มตามหัวข้อ ใส่แท็ก และไฮไลท์สิ่งสำคัญ</p>
+</div>
+<button id="ntNewBtn" type="button" class="glass-btn" data-i18n="nt_new">+ โน้ตใหม่</button>
+</div>
+<div class="glass-card p-4 flex flex-col lg:flex-row lg:items-center gap-3">
+<input id="ntSearch" type="text" data-i18n-ph="nt_search_ph" placeholder="ค้นหาโน้ต..." class="flex-1 h-9 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"/>
+<div id="ntColorPills" class="flex flex-wrap items-center gap-1.5">
+<button type="button" data-nt-color="all" data-i18n="nt_all_colors" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">ทุกสี</button>
+<button type="button" data-nt-color="none" data-i18n="nt_no_color" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">ไม่มีสี</button>
+<button type="button" data-nt-color="yellow" data-i18n="nt_yellow" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">เหลือง</button>
+<button type="button" data-nt-color="green" data-i18n="nt_green" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">เขียว</button>
+<button type="button" data-nt-color="blue" data-i18n="nt_blue" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">ฟ้า</button>
+<button type="button" data-nt-color="pink" data-i18n="nt_pink" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">ชมพู</button>
+</div>
+</div>
+<div id="ntTagChips" class="flex flex-wrap gap-2"></div>
+<div class="glass-card overflow-hidden">
+<div class="hidden md:grid grid-cols-[2fr_1fr_1fr_auto] gap-4 px-4 py-3 border-b border-white/10 font-label-sm text-label-sm text-outline">
+<span>หัวข้อโน้ต</span><span>แท็ก</span><span>อัปเดตล่าสุด</span><span>สี</span>
+</div>
+<div id="ntList"></div>
+<div id="ntEmpty" class="hidden text-center text-outline py-16" data-i18n="nt_empty">ยังไม่มีโน้ต กด + โน้ตใหม่ เพื่อเริ่มเขียน</div>
+</div>
+</div>
+</section>
 </main>
 </div>
 
@@ -340,6 +370,45 @@
 </div>
 </div>
 </div>
+<div id="ntEditor" class="hidden fixed inset-0 z-[90] items-center justify-center p-4" style="background:rgb(0 0 0 / 0.45)">
+<form id="ntForm" class="glass-card w-full max-w-lg p-6 space-y-3 max-h-[90vh] overflow-y-auto">
+<h2 id="ntEditorTitle" class="font-headline-md text-headline-md font-semibold text-on-surface">โน้ตใหม่</h2>
+<input id="ntTitle" type="text" data-i18n-ph="nt_title_ph" placeholder="หัวข้อโน้ต" class="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"/>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<label class="space-y-1"><span class="font-label-sm text-label-sm text-outline" data-i18n="nt_topic">หัวข้อ (Section)</span>
+<input id="ntTopic" list="ntTopicList" type="text" data-i18n-ph="nt_topic_ph" placeholder="เช่น งาน, ไอเดีย" class="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"/>
+<datalist id="ntTopicList"></datalist></label>
+<label class="space-y-1"><span class="font-label-sm text-label-sm text-outline" data-i18n="nt_color">สี</span>
+<select id="ntColor" class="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none">
+<option value="none" data-i18n="nt_no_color">ไม่มีสี</option>
+<option value="yellow" data-i18n="nt_yellow">เหลือง</option>
+<option value="green" data-i18n="nt_green">เขียว</option>
+<option value="blue" data-i18n="nt_blue">ฟ้า</option>
+<option value="pink" data-i18n="nt_pink">ชมพู</option>
+</select></label>
+</div>
+<label class="space-y-1 block"><span class="font-label-sm text-label-sm text-outline" data-i18n="nt_tags">แท็ก (คั่นด้วยเครื่องหมายจุลภาค)</span>
+<input id="ntTags" type="text" data-i18n-ph="nt_tags_ph" placeholder="เช่น ด่วน, ประชุม" class="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"/></label>
+<textarea id="ntBody" rows="8" data-i18n-ph="nt_body_ph" placeholder="เขียนบันทึกที่นี่..." class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"></textarea>
+<p id="ntMsg" class="text-body-sm text-error min-h-[1rem]"></p>
+<div class="flex flex-wrap gap-2 justify-end">
+<button id="ntDelete" type="button" class="glass-btn text-error" data-i18n="nt_delete">ลบ</button>
+<button id="ntCancel" type="button" class="glass-btn" data-i18n="nt_cancel">ยกเลิก</button>
+<button type="submit" class="glass-btn" data-i18n="nt_save">บันทึก</button>
+</div>
+</form>
+</div>
+<div id="ntView" class="hidden fixed inset-0 z-[90] items-center justify-center p-4" style="background:rgb(0 0 0 / 0.45)">
+<div class="glass-card w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+<div id="ntViewBody"></div>
+<div class="flex justify-end gap-2">
+<button id="ntViewDelete" type="button" class="glass-btn text-error">Delete</button>
+<button id="ntViewEdit" type="button" class="glass-btn">Edit</button>
+<button id="ntViewClose" type="button" class="glass-btn">Close</button>
+</div>
+</div>
+</div>
+
 <!-- Toast -->
 <div class="fixed bottom-6 right-6 hidden items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-container-high text-on-surface border border-outline-variant shadow-xl text-body-sm z-50" id="toast">
 <span class="material-symbols-outlined !text-[18px] text-tertiary-fixed-dim" id="toastIcon">check_circle</span>
