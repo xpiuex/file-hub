@@ -1175,7 +1175,7 @@ function ntRowHtml(n) {
     </div>
     <div class="hidden md:flex flex-wrap gap-1">${tags}</div>
     <div class="hidden md:block font-body-sm text-body-sm text-outline">${fmtDate(n.updated_at)}</div>
-    <div class="flex items-center justify-end gap-2">${dot}<span class="text-label-sm font-label-sm text-primary">${esc(t("nt_view"))}</span></div>
+    <div class="flex items-center justify-end gap-2">${dot}<button type="button" data-nt-view="${esc(n.id)}" class="text-label-sm font-label-sm text-primary hover:underline">${esc(t("nt_view"))}</button></div>
   </div>`;
 }
 
@@ -1249,6 +1249,16 @@ async function ntRemove(n) {
   loadNotes();
 }
 
+function ntOpenViewById(id) {
+  try {
+    const n = ntRows.find((x) => String(x.id) === String(id));
+    if (!n) return showToast("ไม่พบโน้ตนี้", "error");
+    ntOpenView(n);
+  } catch (err) {
+    showToast("เปิดโน้ตไม่ได้: " + err.message, "error");
+  }
+}
+
 function ntOpenView(n) {
   if (!n) return;
   ntViewing = n;
@@ -1291,8 +1301,10 @@ document.getElementById("ntPanel").addEventListener("click", (e) => {
   if (col) { ntColorFilter = col.dataset.ntColor; ntRenderFilters(); ntRender(); return; }
   const add = e.target.closest("[data-nt-new-in]");
   if (add) return ntOpenEditor(null, add.dataset.ntNewIn);
+  const view = e.target.closest("[data-nt-view]");
+  if (view) return ntOpenViewById(view.dataset.ntView);
   const row = e.target.closest("[data-nt-id]");
-  if (row) ntOpenView(ntRows.find((n) => n.id === row.dataset.ntId));
+  if (row) return ntOpenViewById(row.dataset.ntId);
 });
 
 /* ---------- ค้นหา / แบ่งหน้า / อื่น ๆ ---------- */
