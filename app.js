@@ -1294,6 +1294,15 @@ function ntOpenView(n) {
   ntShow("ntView", true);
 }
 
+const NT_COLLAPSE_KEY = "ntCollapsed";
+function ntApplyCollapse(on) {
+  document.getElementById("ntPanel").classList.toggle("nt-collapsed", on);
+  localStorage.setItem(NT_COLLAPSE_KEY, on ? "1" : "0");
+}
+document.getElementById("ntCollapseBtn").addEventListener("click", () => ntApplyCollapse(true));
+document.getElementById("ntExpandBtn").addEventListener("click", () => ntApplyCollapse(false));
+ntApplyCollapse(localStorage.getItem(NT_COLLAPSE_KEY) === "1");
+
 document.getElementById("ntNewBtn").addEventListener("click", () => ntOpenEditor());
 document.getElementById("ntForm").addEventListener("submit", ntSave);
 document.getElementById("ntCancel").addEventListener("click", () => ntShow("ntEditor", false));
