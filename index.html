@@ -411,6 +411,19 @@
 </div>
 </div>
 
+<div id="codeScreen" class="hidden fixed inset-0 z-[100] items-center justify-center p-4" style="background: rgb(var(--c-background))">
+<div class="glass-card w-full max-w-sm p-8 space-y-4">
+<h1 class="font-headline-md text-headline-md font-semibold text-center text-on-surface">ยืนยันตัวตน</h1>
+<p class="text-center font-body-sm text-body-sm text-outline">กดส่งรหัสไปที่อีเมลของคุณ แล้วกรอกรหัส 6 หลัก</p>
+<p id="codeEmail" class="text-center font-body-sm text-body-sm text-on-surface-variant"></p>
+<button id="codeSendBtn" type="button" class="glass-btn">ส่งรหัส</button>
+<input id="codeInput" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="รหัส 6 หลัก" class="w-full h-10 px-3 text-center tracking-[0.4em] rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"/>
+<button id="codeVerifyBtn" type="button" class="glass-btn">ยืนยัน</button>
+<button id="codeLogoutBtn" type="button" class="glass-btn">ออกจากระบบ</button>
+<p id="codeMsg" class="text-center text-body-sm text-error min-h-[1rem]"></p>
+</div>
+</div>
+
 <!-- Toast -->
 <div class="fixed bottom-6 right-6 hidden items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-container-high text-on-surface border border-outline-variant shadow-xl text-body-sm z-50" id="toast">
 <span class="material-symbols-outlined !text-[18px] text-tertiary-fixed-dim" id="toastIcon">check_circle</span>
