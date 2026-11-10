@@ -1,4 +1,4 @@
-    .material-symbols-outlined {
+.material-symbols-outlined {
       font-size: 18px;
       line-height: 1;
       display: inline-block;
@@ -491,3 +491,29 @@ body[data-page="home"] #routeNav {
   border-bottom: 0 !important;
 }
 
+
+/* ---------- ดีไซน์ใหม่ (ปรับบางส่วน): แถวตารางและแผงโน้ตพับได้ ---------- */
+#tableCard tbody tr {
+  transition: background 0.18s ease;
+}
+#tableCard tbody tr:hover {
+  background: rgb(var(--c-primary) / 0.06);
+}
+#ntExpandBtn {
+  display: none;
+}
+@media (min-width: 1024px) {
+  #ntPanel.nt-collapsed {
+    width: 56px !important;
+  }
+  #ntPanel.nt-collapsed > div {
+    display: none;
+  }
+  #ntPanel.nt-collapsed #ntExpandBtn {
+    display: inline-flex;
+    margin: 0.75rem auto;
+  }
+  #ntPanel.nt-collapsed #ntCollapseBtn {
+    display: none;
+  }
+}
