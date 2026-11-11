@@ -123,65 +123,79 @@
 <div id="fileContent" class="max-w-[1400px] w-full mx-auto p-4 md:p-6 lg:p-8 space-y-6 lg:!block lg:flex-1 lg:min-w-0 lg:max-w-none">
 <div id="siteName" class="text-right font-headline-sm text-headline-sm font-semibold text-on-surface tracking-tight">AskFile</div>
 
-<div class="space-y-1">
-<div class="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm"><span class="text-on-surface font-medium"><span data-i18n="crumb_all">All Documents</span></span></div>
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-1">
+<!-- HEADER -->
+<section class="flex flex-col gap-5">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
 <div>
-<h1 class="font-headline-lg text-headline-lg font-semibold text-on-surface tracking-tight"><span data-i18n="page_title">Files &amp; Assets</span></h1>
-<p class="font-body-md text-body-md text-on-surface-variant"><span data-i18n="page_desc">Manage and organize your project files, media, and uploaded assets.</span></p>
+<div class="flex items-center gap-2 text-xs font-medium tracking-wide uppercase text-primary"><span data-i18n="crumb_all">All Documents</span></div>
+<h1 class="font-headline-lg text-headline-lg font-semibold text-on-surface tracking-tight mt-1"><span data-i18n="page_title">Files &amp; Assets</span></h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-0.5"><span data-i18n="page_desc">Manage and organize your project files, media, and uploaded assets.</span></p>
 </div>
-<div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-
-<button class="h-9 px-4 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-semibold hover:bg-on-surface/90 flex items-center gap-2 active:scale-[0.98] transition-all shadow-sm" data-upload>
+<div class="flex items-center gap-3">
+<button data-upload class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold shadow-md active:scale-95 transition-all">
 <span class="material-symbols-outlined !text-[18px]">add</span>
 <span><span data-i18n="upload_file">Upload File</span></span>
 </button>
 </div>
 </div>
-</div>
 
-<!-- USAGE CARD -->
-<div class="rounded-lg border border-outline-variant bg-surface-container-low p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-<div class="space-y-2">
-<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface">
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-primary !text-[16px]">database</span>
-              <span data-i18n="usage_db">ฐานข้อมูล (Database)</span>
-            </span>
+<!-- STORAGE CARDS -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined !text-[16px]">database</span>
+</div>
+<span class="font-label-md text-label-md font-semibold text-on-surface"><span data-i18n="usage_db">ฐานข้อมูล (Database)</span></span>
+</div>
 <span class="font-code-inline text-code-inline text-on-surface-variant" id="dbText">-</span>
 </div>
-<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden mb-2">
 <div class="bg-primary-container h-full rounded-full transition-all duration-500" id="dbBar" style="width: 0%"></div>
 </div>
-<div class="font-body-sm text-body-sm text-outline" id="dbPct"><span data-i18n="usage_db_desc">ทั้งฐานข้อมูลรวมทุกตาราง</span></div>
-</div>
-<div class="space-y-2">
-<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface">
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-primary !text-[16px]">folder_zip</span>
-              <span data-i18n="usage_st">ไฟล์ที่อัปโหลด (Storage)</span>
-            </span>
-<span class="font-code-inline text-code-inline text-on-surface-variant" id="stText">-</span>
-</div>
-<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
-<div class="bg-primary-container h-full rounded-full transition-all duration-500" id="stBar" style="width: 0%"></div>
-</div>
-<div class="font-body-sm text-body-sm text-outline" id="stPct"><span data-i18n="usage_st_desc">ไฟล์ทั้งหมดใน bucket project-files</span></div>
-</div>
-<div class="md:col-span-2 flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-outline-variant">
-<span class="font-body-sm text-body-sm text-outline"><span data-i18n="usage_quota">Supabase (ฐานข้อมูล 500 MB, Storage 1 GB)</span></span>
-<button class="h-7 px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface font-label-sm text-label-sm flex items-center gap-1.5 transition-colors active:scale-[0.98]" id="usageRefreshBtn">
-<span class="material-symbols-outlined !text-[14px]">refresh</span>
-              <span data-i18n="refresh_usage">รีเฟรชขนาด</span>
-            </button>
-</div>
+<div class="flex justify-between items-center text-xs font-body-sm text-body-sm text-outline" id="dbPct"><span data-i18n="usage_db_desc">ทั้งฐานข้อมูลรวมทุกตาราง</span></div>
 </div>
 
+<div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined !text-[16px]">folder_zip</span>
+</div>
+<span class="font-label-md text-label-md font-semibold text-on-surface"><span data-i18n="usage_st">ไฟล์ที่อัปโหลด (Storage)</span></span>
+</div>
+<span class="font-code-inline text-code-inline text-on-surface-variant" id="stText">-</span>
+</div>
+<div class="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden mb-2">
+<div class="bg-primary-container h-full rounded-full transition-all duration-500" id="stBar" style="width: 0%"></div>
+</div>
+<div class="flex justify-between items-center text-xs font-body-sm text-body-sm text-outline" id="stPct"><span data-i18n="usage_st_desc">ไฟล์ทั้งหมดใน bucket project-files</span></div>
+</div>
+
+<div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+</span>
+<span class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant"><span data-i18n="usage_quota">Supabase (ฐานข้อมูล 500 MB, Storage 1 GB)</span></span>
+</div>
+</div>
+<button id="usageRefreshBtn" class="mt-2 w-full py-1.5 px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-xs font-medium text-on-surface flex items-center justify-center gap-2 transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined !text-[14px] text-primary">refresh</span>
+<span data-i18n="refresh_usage">รีเฟรชขนาด</span>
+</button>
+</div>
+</div>
+</section>
+
 <!-- TOOLBAR -->
-<div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-surface-container-low p-2 rounded-lg border border-outline-variant">
+<div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-surface-container-low p-3 rounded-2xl border border-outline-variant shadow-sm">
 <div class="flex flex-wrap items-center gap-2">
 <div class="relative">
-<button class="h-8 px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors active:scale-[0.98]">
+<button class="h-8 px-3 rounded-xl border border-outline-variant bg-surface hover:bg-surface-container text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors active:scale-[0.98]">
 <span class="material-symbols-outlined text-outline !text-[16px]">filter_list</span>
 <span><span data-i18n="type_all">All Types</span></span>
 <span class="material-symbols-outlined text-outline !text-[16px]">keyboard_arrow_down</span>
@@ -189,7 +203,7 @@
 </div>
 <div class="relative flex-1 sm:w-72">
 <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline !text-[16px]">search</span>
-<input class="w-full h-8 pl-8 pr-12 text-label-md font-label-md bg-surface border border-outline-variant rounded-lg text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" id="fileSearch" placeholder="Filter files by name or tag..." data-i18n-ph="filter_ph" type="text"/>
+<input id="fileSearch" type="text" data-i18n-ph="filter_ph" placeholder="Filter files by name or tag..." class="w-full h-8 pl-8 pr-12 text-label-md font-label-md bg-surface border border-outline-variant rounded-xl text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-colors"/>
 <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
 <kbd class="px-1.5 py-0.5 text-[10px] font-code-inline text-outline bg-surface-container-high rounded border border-outline-variant">⌘K</kbd>
 </div>
@@ -202,85 +216,63 @@
 </div>
 </div>
 <div class="flex items-center gap-2 justify-end">
-<button id="purgeAllBtn" type="button" data-act="purge-all" data-i18n="purge_all" style="display:none" class="h-8 px-3 rounded-lg border border-error/50 bg-surface text-error hover:bg-error-container/30 font-label-md text-label-md transition-colors active:scale-[0.98]">ลบทั้งหมด</button>
-<button class="h-8 px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-colors active:scale-[0.98]">
+<button id="purgeAllBtn" type="button" data-act="purge-all" data-i18n="purge_all" style="display:none" class="h-8 px-3 rounded-xl border border-error/50 bg-surface text-error hover:bg-error-container/30 font-label-md text-label-md transition-colors active:scale-[0.98]">Empty Trash</button>
+<button class="h-8 px-3 rounded-xl border border-outline-variant bg-surface hover:bg-surface-container text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-colors active:scale-[0.98]">
 <span class="material-symbols-outlined text-outline !text-[16px]">view_column</span>
 <span><span data-i18n="columns">Columns</span></span>
 </button>
-<button class="h-8 w-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface flex items-center justify-center transition-colors active:scale-[0.98]" id="refreshBtn" data-i18n-title="refresh_list">
+<button id="refreshBtn" data-i18n-title="refresh_list" class="h-8 w-8 rounded-xl border border-outline-variant bg-surface hover:bg-surface-container text-on-surface flex items-center justify-center transition-colors active:scale-[0.98]">
 <span class="material-symbols-outlined !text-[16px]">refresh</span>
 </button>
 </div>
 </div>
 
 <!-- EMPTY STATE -->
-<div class="hidden relative w-full rounded-xl border border-dashed border-outline-variant/60 bg-surface-container-lowest/50 p-12 lg:p-16 flex-col items-center justify-center text-center max-w-2xl mx-auto my-4 min-h-[420px] transition-all hover:border-outline/80" id="emptyState">
-<div class="w-16 h-16 rounded-full bg-surface-container-high/70 border border-outline-variant/80 flex items-center justify-center text-on-surface-variant mb-5 shadow-sm">
+<div id="emptyState" class="hidden relative w-full rounded-2xl border border-dashed border-outline-variant bg-surface-container-lowest/50 p-12 lg:p-16 flex-col items-center justify-center text-center max-w-2xl mx-auto my-4 min-h-[420px]">
+<div class="w-16 h-16 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-on-surface-variant mb-5 shadow-sm">
 <span class="material-symbols-outlined text-primary" style="font-size: 28px;">upload_file</span>
 </div>
 <h2 class="font-headline-md text-headline-md font-semibold tracking-tight text-on-surface"><span data-i18n="empty_title">No files uploaded yet</span></h2>
-<p class="font-body-md text-body-md text-on-surface-variant max-w-md mt-2 mb-6 leading-relaxed">
-            <span data-i18n="empty_desc">Drag and drop your files here or click the button below to upload your first file to this workspace.</span>
-          </p>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-md mt-2 mb-6 leading-relaxed"><span data-i18n="empty_desc">Drag and drop your files here or click the button below to upload your first file to this workspace.</span></p>
 <div class="flex flex-wrap items-center justify-center gap-3">
-<button class="flex items-center gap-2 h-9 px-4 rounded-lg bg-on-surface text-surface font-label-md text-label-md font-medium hover:bg-white active:scale-[0.98] transition-all shadow-sm" data-upload>
+<button data-upload class="flex items-center gap-2 h-9 px-4 rounded-xl bg-primary-container text-on-primary-container font-label-md text-label-md font-medium shadow-sm active:scale-[0.98] transition-all">
 <span class="material-symbols-outlined !text-[16px]">add</span>
-              <span data-i18n="upload_plus">+ Upload File</span>
-            </button>
-<button class="flex items-center gap-2 h-9 px-4 rounded-lg border border-outline-variant bg-transparent hover:bg-surface-container text-on-surface font-label-md text-label-md active:scale-[0.98] transition-all">
+<span data-i18n="upload_plus">+ Upload File</span>
+</button>
+<button class="flex items-center gap-2 h-9 px-4 rounded-xl border border-outline-variant bg-transparent hover:bg-surface-container text-on-surface font-label-md text-label-md active:scale-[0.98] transition-all">
 <span class="material-symbols-outlined !text-[16px]">cloud</span>
-              <span data-i18n="import_cloud">Import from Cloud</span>
-            </button>
+<span data-i18n="import_cloud">Import from Cloud</span>
+</button>
 </div>
 <div class="mt-10 pt-6 border-t border-outline-variant/40 flex flex-col sm:flex-row items-center justify-center gap-3 text-outline font-body-sm text-body-sm text-[11px]">
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined !text-[14px]">description</span>
-              <span data-i18n="formats">Supported formats: PDF, PNG, JPG, SVG, MP4, ZIP (up to 50 MB)</span>
-            </span>
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined !text-[14px]">description</span><span data-i18n="formats">Supported formats: PDF, PNG, JPG, SVG, MP4, ZIP (up to 50 MB)</span></span>
 <span class="hidden sm:inline">•</span>
-<span class="flex items-center gap-1 text-on-surface-variant">
-<span class="material-symbols-outlined !text-[13px]">lock</span>
-              <span data-i18n="storage_secure">End-to-end encrypted storage</span>
-            </span>
+<span class="flex items-center gap-1 text-on-surface-variant"><span class="material-symbols-outlined !text-[13px]">lock</span><span data-i18n="storage_secure">End-to-end encrypted storage</span></span>
 </div>
 </div>
 
 <!-- TABLE -->
-<div class="rounded-lg border border-outline-variant bg-surface overflow-hidden shadow-sm" id="tableCard">
+<div class="rounded-2xl border border-outline-variant bg-surface overflow-hidden shadow-sm" id="tableCard">
 <div class="overflow-x-auto min-w-full">
 <table class="w-full text-left border-collapse">
 <thead>
 <tr class="border-b border-outline-variant bg-surface-container-lowest/60 text-on-surface-variant font-label-md text-label-md">
 <th class="w-12 px-4 py-3 text-center">
-<input class="w-4 h-4 rounded bg-surface border-outline-variant text-primary-container focus:ring-primary-container focus:ring-offset-surface cursor-pointer" id="selectAll" type="checkbox"/>
+<input id="selectAll" type="checkbox" class="w-4 h-4 rounded bg-surface border-outline-variant text-primary-container focus:ring-primary-container cursor-pointer"/>
 </th>
 <th class="px-4 py-3 font-medium">
-<button class="flex items-center gap-1.5 text-on-surface hover:text-primary transition-colors group">
-<span><span data-i18n="col_name">File Name</span></span>
-<span class="material-symbols-outlined !text-[16px] text-outline group-hover:text-primary">unfold_more</span>
-</button>
+<button class="flex items-center gap-1.5 text-on-surface hover:text-primary transition-colors group"><span><span data-i18n="col_name">File Name</span></span><span class="material-symbols-outlined !text-[16px] text-outline group-hover:text-primary">unfold_more</span></button>
 </th>
 <th class="px-4 py-3 font-medium">
-<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface transition-colors">
-<span><span data-i18n="col_category">Category</span></span>
-<span class="material-symbols-outlined !text-[14px] text-outline">arrow_drop_down</span>
-</button>
+<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface transition-colors"><span><span data-i18n="col_category">Category</span></span><span class="material-symbols-outlined !text-[14px] text-outline">arrow_drop_down</span></button>
 </th>
 <th class="px-4 py-3 font-medium">
-<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface transition-colors">
-<span><span data-i18n="col_size">Size</span></span>
-<span class="material-symbols-outlined !text-[14px] text-outline">unfold_more</span>
-</button>
+<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface transition-colors"><span><span data-i18n="col_size">Size</span></span><span class="material-symbols-outlined !text-[14px] text-outline">unfold_more</span></button>
 </th>
 <th class="px-4 py-3 font-medium">
-<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface transition-colors">
-<span><span data-i18n="col_date">Uploaded Date</span></span>
-<span class="material-symbols-outlined !text-[14px] text-outline">arrow_drop_down</span>
-</button>
+<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface transition-colors"><span><span data-i18n="col_date">Uploaded Date</span></span><span class="material-symbols-outlined !text-[14px] text-outline">arrow_drop_down</span></button>
 </th>
-<th class="w-14 px-4 py-3 text-right font-medium">
-<span class="sr-only"><span data-i18n="col_actions">Actions</span></span>
-</th>
+<th class="w-14 px-4 py-3 text-right font-medium"><span class="sr-only"><span data-i18n="col_actions">Actions</span></span></th>
 </tr>
 </thead>
 <tbody class="divide-y divide-outline-variant font-body-md text-body-md" id="tableBody"></tbody>
@@ -291,12 +283,12 @@
 <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t border-outline-variant bg-surface-container-lowest/60 text-on-surface-variant font-label-sm text-label-sm">
 <div class="text-outline font-medium text-center sm:text-left">
 <span class="text-on-surface font-semibold" id="selCount">0</span> <span data-i18n="sel_of">of</span> <span id="totalCount">0</span> <span data-i18n="sel_suffix">row(s) selected</span>
-            </div>
+</div>
 <div class="flex flex-wrap items-center gap-4 sm:gap-6 justify-center sm:justify-end">
 <div class="flex items-center gap-2">
 <span class="text-on-surface-variant"><span data-i18n="rows_per_page">Rows per page</span></span>
 <div class="relative">
-<select class="h-8 pl-2 pr-6 text-label-sm font-label-sm bg-surface border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container appearance-none cursor-pointer" id="perPage">
+<select id="perPage" class="h-8 pl-2 pr-6 text-label-sm font-label-sm bg-surface border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container appearance-none cursor-pointer">
 <option selected="" value="10">10</option>
 <option value="20">20</option>
 <option value="50">50</option>
@@ -307,18 +299,10 @@
 </div>
 <div class="text-on-surface font-medium" id="pageInfo">Page 1 of 1</div>
 <div class="flex items-center gap-1">
-<button class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-outline hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]" id="firstPage" title="First page">
-<span class="material-symbols-outlined !text-[16px]">first_page</span>
-</button>
-<button class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-outline hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]" id="prevPage" title="Previous page">
-<span class="material-symbols-outlined !text-[16px]">chevron_left</span>
-</button>
-<button class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface-variant hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]" id="nextPage" title="Next page">
-<span class="material-symbols-outlined !text-[16px]">chevron_right</span>
-</button>
-<button class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface-variant hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]" id="lastPage" title="Last page">
-<span class="material-symbols-outlined !text-[16px]">last_page</span>
-</button>
+<button id="firstPage" title="First page" class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-outline hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]"><span class="material-symbols-outlined !text-[16px]">first_page</span></button>
+<button id="prevPage" title="Previous page" class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-outline hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]"><span class="material-symbols-outlined !text-[16px]">chevron_left</span></button>
+<button id="nextPage" title="Next page" class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface-variant hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]"><span class="material-symbols-outlined !text-[16px]">chevron_right</span></button>
+<button id="lastPage" title="Last page" class="w-8 h-8 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-on-surface-variant hover:text-on-surface disabled:opacity-40 flex items-center justify-center transition-colors active:scale-[0.98]"><span class="material-symbols-outlined !text-[16px]">last_page</span></button>
 </div>
 </div>
 </div>
@@ -332,11 +316,13 @@
 <h1 class="font-headline-lg text-headline-lg font-semibold tracking-tight text-on-surface" data-i18n="nt_title">โน้ต</h1>
 <p class="font-body-md text-body-md text-on-surface-variant" data-i18n="nt_desc">เขียนบันทึก จัดกลุ่มตามหัวข้อ ใส่แท็ก และไฮไลท์สิ่งสำคัญ</p>
 </div>
-<button id="ntNewBtn" type="button" class="glass-btn" data-i18n="nt_new">+ โน้ตใหม่</button>
-<button id="ntCollapseBtn" type="button" class="glass-btn" title="พับแถบโน้ต">›</button>
+<div class="flex items-center gap-1.5 shrink-0">
+<button id="ntNewBtn" type="button" class="h-9 px-3.5 rounded-xl bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold flex items-center gap-1.5 shadow-sm active:scale-[0.98] transition-all" data-i18n="nt_new">+ โน้ตใหม่</button>
+<button id="ntCollapseBtn" type="button" class="w-9 h-9 rounded-xl border border-outline-variant bg-surface hover:bg-surface-container text-on-surface-variant flex items-center justify-center transition-colors" title="พับแถบโน้ต">›</button>
 </div>
-<div class="glass-card p-4 flex flex-col lg:flex-row lg:items-center gap-3">
-<input id="ntSearch" type="text" data-i18n-ph="nt_search_ph" placeholder="ค้นหาโน้ต..." class="flex-1 h-9 px-3 rounded-lg bg-white/5 border border-white/15 text-on-surface focus:outline-none"/>
+</div>
+<div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant shadow-sm flex flex-col gap-3">
+<input id="ntSearch" type="text" data-i18n-ph="nt_search_ph" placeholder="ค้นหาโน้ต..." class="w-full h-9 px-3 rounded-lg bg-surface border border-outline-variant text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container"/>
 <div id="ntColorPills" class="flex flex-wrap items-center gap-1.5">
 <button type="button" data-nt-color="all" data-i18n="nt_all_colors" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">ทุกสี</button>
 <button type="button" data-nt-color="none" data-i18n="nt_no_color" class="h-8 px-3 rounded-full text-label-sm font-label-sm border">ไม่มีสี</button>
@@ -347,15 +333,15 @@
 </div>
 </div>
 <div id="ntTagChips" class="flex flex-wrap gap-2"></div>
-<div class="glass-card overflow-hidden">
-<div class="hidden md:grid grid-cols-[2fr_1fr_1fr_auto] gap-4 px-4 py-3 border-b border-white/10 font-label-sm text-label-sm text-outline">
+<div class="rounded-2xl bg-surface-container-low border border-outline-variant shadow-sm overflow-hidden">
+<div class="hidden md:grid grid-cols-[2fr_1fr_1fr_auto] gap-4 px-4 py-3 border-b border-outline-variant font-label-sm text-label-sm text-outline">
 <span>หัวข้อโน้ต</span><span>แท็ก</span><span>อัปเดตล่าสุด</span><span>สี</span>
 </div>
 <div id="ntList"></div>
 <div id="ntEmpty" class="hidden text-center text-outline py-16" data-i18n="nt_empty">ยังไม่มีโน้ต กด + โน้ตใหม่ เพื่อเริ่มเขียน</div>
 </div>
 </div>
-<button id="ntExpandBtn" type="button" class="glass-btn" title="ขยายแถบโน้ต">‹</button>
+<button id="ntExpandBtn" type="button" class="w-9 h-9 rounded-xl border border-outline-variant bg-surface hover:bg-surface-container text-on-surface-variant flex items-center justify-center transition-colors" title="ขยายแถบโน้ต">‹</button>
 </section>
 </div>
 </section>
