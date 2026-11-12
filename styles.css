@@ -1,4 +1,4 @@
-.material-symbols-outlined {
+    .material-symbols-outlined {
       font-size: 18px;
       line-height: 1;
       display: inline-block;
@@ -515,5 +515,32 @@ body[data-page="home"] #routeNav {
   }
   #ntPanel.nt-collapsed #ntCollapseBtn {
     display: none;
+  }
+}
+
+/* ===== Stitch layout (ทั้งแอป) ===== */
+/* เดสก์ท็อป: ไม่มีแถบเมนูข้าง ใช้เมนูด้านบนแทน (ตาม Stitch) */
+@media (min-width: 768px) {
+  #sidebar, #menuBtn { display: none !important; }
+}
+/* มือถือ: เมนูไฟล์ย้ายเป็นแถบล่างแบบ Stitch */
+@media (max-width: 767px) {
+  #headerNav:not(.hidden) {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    display: flex; justify-content: space-around; gap: 0;
+    padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgb(var(--c-outline-variant, 200 200 200) / 0.6);
+    background: rgb(var(--c-background, 255 255 255) / 0.92);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    overflow: visible;
+  }
+  #headerNav:not(.hidden) a { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; }
+  body[data-page="workspace"] main { padding-bottom: 5.5rem; }
+  .fab-upload { display: none; }
+  body[data-page="workspace"] .fab-upload {
+    display: flex; position: fixed; right: 1rem; bottom: 5rem; z-index: 45;
+    width: 3.5rem; height: 3.5rem; border-radius: 1rem; align-items: center; justify-content: center;
+    background: rgb(var(--c-primary-container)); color: rgb(var(--c-on-primary-container, 255 255 255));
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.35);
   }
 }
