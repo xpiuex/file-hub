@@ -435,16 +435,8 @@ async function routeFromHash() {
   const h = location.hash;
   if (h === "#room-work") {
     if (fbUser && canDelete) {
-      if (await isVerified()) {
-        hideLogin();
-        hideCodeScreen();
-        return setPage("workspace");
-      }
-      // ล็อกอินและอยู่ในรายการแล้ว แต่ยังไม่ได้ยืนยันรหัสจากอีเมล
       hideLogin();
-      setPage("home");
-      showCodeScreen();
-      return;
+      return setPage("workspace");
     }
     setPage("home");
     if (!fbUser) showLogin(t("need_login_enter"));
@@ -1326,122 +1318,6 @@ document.getElementById("ntPanel").addEventListener("click", (e) => {
   if (view) return ntOpenViewById(view.dataset.ntView);
   const row = e.target.closest("[data-nt-id]");
   if (row) return ntOpenViewById(row.dataset.ntId);
-});
-
-/* ---------- รหัสยืนยันทางอีเมล (ส่งผ่าน Resend ที่ฐานข้อมูล) ---------- */
-const codeScreen = document.getElementById("codeScreen");
-let codeCooldownTimer = null;
-
-function showCodeScreen() {
-  codeScreen.classList.remove("hidden");
-  codeScreen.classList.add("flex");
-  document.getElementById("codeEmail").textContent = fbUser?.email || "";
-  setCodeMsg("");
-}
-function hideCodeScreen() {
-  codeScreen.classList.add("hidden");
-  codeScreen.classList.remove("flex");
-}
-function setCodeMsg(s) {
-  document.getElementById("codeMsg").textContent = s;
-}
-function codeErrorText(msg, status) {
-  const m = String(msg || "");
-  if (m === "network") return "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตหรือการตั้งค่า Edge Function";
-  if (!m) return "ส่งคำขอไม่สำเร็จ (รหัส " + (status || "ไม่ทราบ") + ")";
-  if (m.includes("cooldown")) return "กรุณารอสักครู่ก่อนขอรหัสใหม่";
-  if (m.includes("no_token")) return "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่";
-  if (m.includes("bad_token")) return "ยืนยันตัวตนไม่สำเร็จ กรุณาเข้าสู่ระบบใหม่";
-  if (m.includes("room_locked") || m.includes("locked")) return "กรอกผิดหลายครั้ง กรุณารอ 15 นาที";
-  if (m.includes("expired")) return "รหัสหมดอายุ กรุณาขอรหัสใหม่";
-  if (m.includes("no_code")) return "กรุณากดส่งรหัสก่อน";
-  if (m.includes("wrong")) return "รหัสไม่ถูกต้อง";
-  if (m.includes("not allowed")) return "บัญชีนี้ไม่มีสิทธิ์เข้าใช้งาน";
-  return m;
-}
-function startCodeCooldown(sec) {
-  const btn = document.getElementById("codeSendBtn");
-  let left = sec;
-  clearInterval(codeCooldownTimer);
-  const tick = () => {
-    if (left <= 0) {
-      clearInterval(codeCooldownTimer);
-      btn.disabled = false;
-      btn.textContent = "ส่งรหัส";
-      return;
-    }
-    btn.disabled = true;
-    btn.textContent = `ขอรหัสใหม่ได้ใน ${left} วินาที`;
-    left--;
-  };
-  tick();
-  codeCooldownTimer = setInterval(tick, 1000);
-}
-async function isVerified() {
-  try {
-    const { data, error } = await withTimeout(sb.rpc("is_verified"));
-    return !error && data === true;
-  } catch {
-    return false;
-  }
-}
-
-const LOGIN_CODE_URL = SUPABASE_URL + "/functions/v1/login-code";
-
-// เรียก Edge Function login-code โดยแนบ Firebase ID token ของผู้ใช้ที่ล็อกอินอยู่
-async function callLoginCode(body) {
-  const user = fbAuth?.currentUser;
-  if (!user) return { ok: false, status: 401, data: { error: "no_token" } };
-  try {
-    const token = await user.getIdToken();
-    const res = await fetch(LOGIN_CODE_URL, {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + token,
-        apikey: SUPABASE_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json().catch(() => ({}));
-    return { ok: res.ok, status: res.status, data };
-  } catch (err) {
-    // เครือข่ายขัดข้อง หรือ CORS/ฟังก์ชันยังไม่ได้ deploy
-    return { ok: false, status: 0, data: { error: "network", detail: String(err) } };
-  }
-}
-
-document.getElementById("codeSendBtn").addEventListener("click", async () => {
-  setCodeMsg("");
-  const r = await callLoginCode({ action: "send" });
-  if (!r.ok) {
-    if (r.data.error === "cooldown") return startCodeCooldown(Number(r.data.wait) || 60);
-    if (r.data.error === "mail_failed") return setCodeMsg("ส่งอีเมลไม่สำเร็จ กรุณาแจ้งผู้ดูแลระบบ");
-    return setCodeMsg(codeErrorText(r.data.error, r.status));
-  }
-  setCodeMsg("ส่งรหัสไปที่อีเมลแล้ว กรุณาตรวจกล่องจดหมายและโฟลเดอร์สแปม");
-  startCodeCooldown(60);
-});
-
-document.getElementById("codeVerifyBtn").addEventListener("click", async () => {
-  const code = document.getElementById("codeInput").value.trim();
-  if (!/^\d{6}$/.test(code)) return setCodeMsg("กรอกรหัส 6 หลัก");
-  const r = await callLoginCode({ action: "verify", code });
-  if (!r.ok) {
-    if (r.data.error === "wrong") {
-      return setCodeMsg(`รหัสไม่ถูกต้อง เหลือโอกาส ${r.data.attempts_left} ครั้ง`);
-    }
-    return setCodeMsg(codeErrorText(r.data.error, r.status));
-  }
-  setCodeMsg("");
-  hideCodeScreen();
-  await routeFromHash();
-});
-
-document.getElementById("codeLogoutBtn").addEventListener("click", async () => {
-  if (fbAuth) await fbSignOut(fbAuth);
-  location.hash = "";
-  location.reload();
 });
 
 /* ---------- ค้นหา / แบ่งหน้า / อื่น ๆ ---------- */
