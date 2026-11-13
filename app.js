@@ -1054,14 +1054,19 @@ function uniqueName(name, projectId) {
   return name;
 }
 
+function fail(msg, type = "error") {
+  showToast(msg, type);
+  return false;
+}
+
 async function uploadFileObject(file) {
-  if (file.size > MAX_FILE_SIZE) return showToast(t("file_too_big"), "error");
+  if (file.size > MAX_FILE_SIZE) return fail(t("file_too_big"), "error");
 
   let projectId;
   try {
     projectId = await getDefaultProjectId();
   } catch (err) {
-    return showToast(t("prep_failed", { msg: err.message }), "error");
+    return fail(t("prep_failed", { msg: err.message }), "error");
   }
 
   showToast(t("uploading"), "cloud_upload");
@@ -1076,7 +1081,7 @@ async function uploadFileObject(file) {
   if (hash) {
     const { data: dup, error: dupErr } = await sb.from("files")
       .select("file_name").eq("content_hash", hash).is("deleted_at", null).limit(1);
-    if (!dupErr && dup && dup.length) return showToast(t("dup_content", { name: dup[0].file_name }), "warning");
+    if (!dupErr && dup && dup.length) return fail(t("dup_content", { name: dup[0].file_name }), "warning");
   }
 
   // 2) ชื่อซ้ำ -> บันทึกด้วยชื่อใหม่ที่ไม่ซ้ำ
@@ -1089,7 +1094,7 @@ async function uploadFileObject(file) {
   const { error: upErr } = await sb.storage.from(BUCKET).upload(storagePath, file, {
     contentType: file.type || "application/octet-stream",
   });
-  if (upErr) return showToast(upErr.message, "error");
+  if (upErr) return fail(upErr.message, "error");
 
   const { error } = await sb.from("files").insert({
     project_id: projectId,
@@ -1105,21 +1110,106 @@ async function uploadFileObject(file) {
   if (error) {
     await sb.storage.from(BUCKET).remove([storagePath]);
     // 23505 = ละเมิด unique index ที่ฐานข้อมูล (กันกรณีอัปโหลดพร้อมกัน)
-    return showToast(error.code === "23505" ? t("dup_db") : error.message, "error");
+    return fail(error.code === "23505" ? t("dup_db") : error.message, "error");
   }
   logActivity(t("act_upload", { name: finalName }));
   showToast(finalName !== file.name ? t("renamed_auto", { name: finalName }) : t("upload_ok"));
   loadAll();
+  return true;
 }
 
 document.querySelectorAll("[data-upload]").forEach((btn) => {
   btn.addEventListener("click", () => document.getElementById("fileInputHidden").click());
 });
 
+const uploadQueueEl = document.getElementById("uploadQueue");
+const UPLOAD_STATE = {
+  uploading: ["กำลังอัปโหลด…", "text-on-surface-variant"],
+  done: ["เสร็จสิ้น", "text-emerald-500"],
+  failed: ["ไม่สำเร็จ", "text-error"],
+};
+
+function addUploadRow(file) {
+  uploadQueueEl.classList.remove("hidden");
+  uploadQueueEl.classList.add("flex");
+  const row = document.createElement("div");
+  row.className = "rounded-xl bg-surface-container-high border border-outline-variant p-3 space-y-2";
+  row.innerHTML = `
+    <div class="flex items-center justify-between gap-3">
+      <span class="font-label-md text-label-md text-on-surface truncate" data-name></span>
+      <span class="font-body-sm text-body-sm text-outline shrink-0" data-size></span>
+    </div>
+    <div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+      <div class="h-full rounded-full bg-primary-container animate-pulse" data-bar style="width: 100%"></div>
+    </div>
+    <div class="font-body-sm text-body-sm text-right" data-status></div>`;
+  row.querySelector("[data-name]").textContent = file.name;
+  row.querySelector("[data-size]").textContent = fmtSize(file.size);
+  uploadQueueEl.appendChild(row);
+  return row;
+}
+
+function setUploadRow(row, state) {
+  const [label, color] = UPLOAD_STATE[state];
+  const st = row.querySelector("[data-status]");
+  st.textContent = label;
+  st.className = "font-body-sm text-body-sm text-right " + color;
+  const bar = row.querySelector("[data-bar]");
+  if (state !== "uploading") {
+    bar.classList.remove("animate-pulse");
+    bar.style.width = "100%";
+    bar.classList.toggle("bg-emerald-500", state === "done");
+    bar.classList.toggle("bg-error", state === "failed");
+    setTimeout(() => {
+      row.remove();
+      if (!uploadQueueEl.children.length) {
+        uploadQueueEl.classList.add("hidden");
+        uploadQueueEl.classList.remove("flex");
+      }
+    }, state === "done" ? 4000 : 8000);
+  }
+}
+
+async function handleFiles(fileList) {
+  const files = Array.from(fileList || []);
+  for (const file of files) {
+    const row = addUploadRow(file);
+    let ok = false;
+    try {
+      ok = await uploadFileObject(file);
+    } catch (err) {
+      console.warn("อัปโหลดล้มเหลว:", err);
+    }
+    setUploadRow(row, ok ? "done" : "failed");
+  }
+}
+
 document.getElementById("fileInputHidden").addEventListener("change", (e) => {
-  const file = e.target.files[0];
+  const files = Array.from(e.target.files || []);
   e.target.value = "";
-  if (file) uploadFileObject(file);
+  handleFiles(files);
+});
+
+// ลากไฟล์มาวางในกล่องอัปโหลด
+const dropzoneEl = document.getElementById("uploadDropzone");
+const DROP_ON = ["border-primary-container", "bg-primary/5"];
+["dragenter", "dragover"].forEach((ev) =>
+  dropzoneEl.addEventListener(ev, (e) => {
+    e.preventDefault();
+    dropzoneEl.classList.add(...DROP_ON);
+  })
+);
+["dragleave", "drop"].forEach((ev) =>
+  dropzoneEl.addEventListener(ev, (e) => {
+    e.preventDefault();
+    dropzoneEl.classList.remove(...DROP_ON);
+  })
+);
+dropzoneEl.addEventListener("drop", (e) => handleFiles(e.dataTransfer.files));
+// กันไม่ให้เบราว์เซอร์เปิดไฟล์ที่ลากมาวางนอกกล่อง
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", (e) => {
+  if (!dropzoneEl.contains(e.target)) e.preventDefault();
 });
 
 /* ---------- โน้ต (แท็กในหน้า room-work) ---------- */
