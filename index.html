@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="styles.css"/>
 </head>
 <body class="min-h-screen md:h-screen flex flex-col md:overflow-hidden select-none" data-page="home">
-<input class="hidden" id="fileInputHidden" type="file"/>
+<input class="hidden" id="fileInputHidden" type="file" multiple/>
 <!-- ==================== 1. LOGIN SCREEN ==================== -->
 <div class="hidden fixed inset-0 z-[100] flex-col md:flex-row bg-background/95 backdrop-blur-2xl" id="loginScreen">
 <!-- Brand Info (Left) -->
@@ -249,6 +249,18 @@
 </div>
 </div>
 <!-- Table Card -->
+<!-- UPLOAD DROPZONE -->
+<div id="uploadDropzone" class="rounded-2xl border-2 border-dashed border-outline-variant bg-surface-container-low/60 p-6 md:p-8 flex flex-col md:flex-row items-center gap-5 transition-colors">
+<div class="w-14 h-14 rounded-2xl bg-primary-container/20 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined !text-[28px]">cloud_upload</span>
+</div>
+<div class="flex-1 text-center md:text-left">
+<p class="font-label-md text-label-md text-on-surface font-semibold">ลากไฟล์มาวางที่นี่ หรือกดเลือกไฟล์</p>
+<p class="font-body-sm text-body-sm text-outline mt-1">เลือกได้หลายไฟล์พร้อมกัน ไฟล์ที่มีเนื้อหาซ้ำกับที่มีอยู่แล้วจะไม่ถูกอัปโหลด</p>
+</div>
+<button type="button" data-upload class="h-9 px-4 rounded-xl bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold shadow-sm active:scale-[0.98] transition-all shrink-0">เลือกไฟล์</button>
+</div>
+<div id="uploadQueue" class="hidden flex-col gap-2"></div>
 <div id="emptyState" class="hidden relative w-full rounded-2xl border border-dashed border-outline-variant bg-surface-container-lowest/50 p-12 lg:p-16 flex-col items-center justify-center text-center max-w-2xl mx-auto my-4 min-h-[420px]">
 <div class="w-16 h-16 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-on-surface-variant mb-5 shadow-sm">
 <span class="material-symbols-outlined text-primary" style="font-size: 28px;">upload_file</span>
