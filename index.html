@@ -178,49 +178,75 @@
 <!-- Left: Files Content -->
 <div class="max-w-[1400px] w-full mx-auto p-4 md:p-6 lg:p-8 space-y-6 lg:!block lg:flex-1 lg:min-w-0" id="fileContent">
 <!-- Workspace Header -->
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
 <div>
-<div class="flex items-center gap-2 text-xs text-on-surface-variant mb-1">
+<div class="flex items-center gap-2 text-xs font-medium tracking-wide uppercase text-primary">
 <span>ไฟล์ทั้งหมด</span>
-<span>•</span>
-<span>คลาวด์องค์กร</span>
+<span class="text-outline">•</span>
+<span class="text-on-surface-variant">คลาวด์ไดรฟ์ส่วนตัว</span>
 </div>
-<h1 class="text-2xl font-bold text-on-surface tracking-tight">ไฟล์และทรัพยากร</h1>
-<p class="text-sm text-on-surface-variant">จัดการและจัดระเบียบไฟล์โปรเจกต์ สื่อ และทรัพยากรที่อัปโหลด</p>
+<h1 class="text-2xl lg:text-3xl font-bold tracking-tight text-on-surface mt-1">ไฟล์และทรัพยากร</h1>
+<p class="text-sm text-on-surface-variant mt-0.5">จัดการและจัดระเบียบไฟล์โปรเจกต์ สื่อ และทรัพยากรที่อัปโหลด</p>
 </div>
-<button class="h-9 px-4 rounded-lg bg-on-surface text-surface font-semibold text-sm hover:bg-on-surface/90 flex items-center gap-2 transition-all shadow-sm active:scale-95" data-upload="">
+<button data-upload type="button" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-container text-on-primary-container text-sm font-semibold shadow-lg active:scale-95 transition-all">
 <span class="material-symbols-outlined !text-[18px]">add</span>
-<span>Upload File</span>
+<span>อัปโหลดไฟล์</span>
 </button>
 </div>
-<!-- Supabase Storage Usage Card -->
-<div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 grid grid-cols-1 md:grid-cols-2 gap-6 backdrop-blur-md">
-<div class="space-y-2">
-<div class="flex items-center justify-between text-xs text-on-surface-variant">
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-primary !text-[16px]">database</span>
-                    ฐานข้อมูล (Database)
-                  </span>
-<span class="font-mono text-on-surface-variant" id="dbText">11.5 MB / 500 MB</span>
+<!-- Storage cards (ตามดีไซน์ Stitch) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined !text-[16px]">database</span>
 </div>
-<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
-<div class="bg-primary-container h-full rounded-full transition-all duration-500" id="dbBar" style="width: 2.3%"></div>
+<span class="text-sm font-semibold text-on-surface">ฐานข้อมูล (Database)</span>
 </div>
-<div class="text-[11px] text-outline" id="dbPct">ใช้แล้ว 2.3%</div>
+<span class="font-mono text-xs text-on-surface-variant" id="dbText">11.5 MB / 500 MB</span>
 </div>
-<div class="space-y-2">
-<div class="flex items-center justify-between text-xs text-on-surface-variant">
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-primary !text-[16px]">folder_zip</span>
-                    ไฟล์ที่อัปโหลด (Storage)
-                  </span>
-<span class="font-mono text-on-surface-variant" id="stText">3.5 MB / 1.0 GB</span>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden mb-2">
+<div class="bg-primary-container h-full rounded-full shadow-sm transition-all duration-500" id="dbBar" style="width: 2.3%"></div>
 </div>
-<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
-<div class="bg-primary-container h-full rounded-full transition-all duration-500" id="stBar" style="width: 0.35%"></div>
+<div class="flex justify-between items-center text-xs">
+<span class="text-on-surface-variant" id="dbPct">ใช้แล้ว 2.3% ของโควต้า</span>
+<span class="text-emerald-500 text-[11px] bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">ปกติ</span>
 </div>
-<div class="text-[11px] text-outline" id="stPct">ใช้แล้ว 0.35% (ว่าง 996.5 MB)</div>
-<button id="usageRefreshBtn" type="button" class="mt-2 w-full py-1.5 px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-xs font-medium text-on-surface">รีเฟรชขนาด</button>
+</div>
+<div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined !text-[16px]">folder_zip</span>
+</div>
+<span class="text-sm font-semibold text-on-surface">ไฟล์ที่อัปโหลด (Storage)</span>
+</div>
+<span class="font-mono text-xs text-on-surface-variant" id="stText">3.5 MB / 1.0 GB</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden mb-2">
+<div class="bg-primary-container h-full rounded-full shadow-sm transition-all duration-500" id="stBar" style="width: 0.35%"></div>
+</div>
+<div class="flex justify-between items-center text-xs">
+<span class="text-on-surface-variant" id="stPct">ใช้แล้ว 0.35% ของโควต้า</span>
+<span class="text-[11px] text-outline">ว่างอีก 996.5 MB</span>
+</div>
+</div>
+<div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+</span>
+<span class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Supabase Cloud</span>
+</div>
+<span class="text-[11px] text-outline">ซิงค์ล่าสุดเมื่อครู่</span>
+</div>
+<div class="text-xs text-on-surface-variant py-1">ฐานข้อมูล 500 MB, Storage 1 GB (Free Tier)</div>
+<button id="usageRefreshBtn" type="button" class="mt-2 w-full py-1.5 px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container text-xs font-medium text-on-surface flex items-center justify-center gap-2 transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined !text-[14px] text-primary">refresh</span>
+<span>รีเฟรชขนาด</span>
+</button>
 </div>
 </div>
 <!-- Toolbar (Filter, Search, Sort) -->
